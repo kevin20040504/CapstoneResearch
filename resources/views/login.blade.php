@@ -6,7 +6,7 @@
     <link href="{{ asset('css/main.css') }}" rel="stylesheet"  type="text/css">
 </head>
 <body>
-    <img src="/img/TMCC-building-bg.jpg" alt="tmcc-login-bg" id="login-bg"> 
+    <img src="/img/TMCC-building-bg.jpg" alt="tmcc-login-bg" id="login-bg">
 
     <div id="login-container">
         <img src="/img/TMCC-logo.png" alt="login-tmcc-logo" id="login-TMCC-logo">
@@ -28,6 +28,5 @@
             </form>
         </div>
     </div> 
-
 </body>
 </html>
