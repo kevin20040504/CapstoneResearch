@@ -26,6 +26,8 @@ class User extends Authenticatable
         'email',
         'username',
         'role',
+        'department',
+        'status',
         'password',
     ];
 
@@ -50,5 +52,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function student(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Student::class);
     }
 }

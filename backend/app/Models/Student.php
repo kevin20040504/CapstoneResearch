@@ -38,4 +38,9 @@ class Student extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function recordRequests()
+    {
+        return $this->hasMany(RecordRequest::class, 'student_id', 'student_id');
+    }
 }

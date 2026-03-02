@@ -61,4 +61,18 @@ class AuthService
         $token = $user->currentAccessToken();
         $token->delete();
     }
+
+    /**
+     * Change authenticated user's password.
+     */
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void
+    {
+        if (! Hash::check($currentPassword, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        $user->forceFill(['password' => $newPassword])->save();
+    }
 }
