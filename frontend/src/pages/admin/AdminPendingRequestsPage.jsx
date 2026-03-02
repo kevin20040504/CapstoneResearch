@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FiCheck, FiX, FiSearch, FiChevronUp, FiChevronDown } from 'react-icons/fi';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { staffToast } from '../lib/notifications';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { adminToast } from '../../lib/notifications';
 
 const ENTRIES_OPTIONS = [5, 10, 25, 50];
 
@@ -19,14 +19,14 @@ const sortData = (data, key, dir) => {
   });
 };
 
-const StaffPendingRequestsPage = () => {
+const AdminPendingRequestsPage = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
-  const [pendingSearch, setPendingSearch] = useState('');
-  const [pendingFilterType, setPendingFilterType] = useState('');
-  const [pendingSortKey, setPendingSortKey] = useState('requested_at');
-  const [pendingSortDir, setPendingSortDir] = useState('desc');
-  const [pendingEntries, setPendingEntries] = useState(10);
-  const [pendingPage, setPendingPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [sortKey, setSortKey] = useState('requested_at');
+  const [sortDir, setSortDir] = useState('desc');
+  const [entries, setEntries] = useState(10);
+  const [page, setPage] = useState(1);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
@@ -55,55 +55,41 @@ const StaffPendingRequestsPage = () => {
     setConfirmAction(null);
     setConfirmLoading(false);
     if (type === 'approve') {
-      staffToast.success('Request approved', `${student_name}'s record request has been approved.`);
+      adminToast.success('Request approved', `${student_name}'s record request has been approved.`);
     } else {
-      staffToast.warning('Request rejected', `${student_name}'s record request has been rejected.`);
+      adminToast.warning('Request rejected', `${student_name}'s record request has been rejected.`);
     }
   };
 
   const toggleSort = (key) => {
-    if (key === pendingSortKey) setPendingSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else {
-      setPendingSortKey(key);
-      setPendingSortDir('asc');
-    }
+    if (key === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
   };
 
-  const SortableTh = ({ label, sortKey }) => (
+  const SortableTh = ({ label, sortKey: sk }) => (
     <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">
-      <button
-        type="button"
-        className="flex items-center gap-1 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-tmcc/30 rounded"
-        onClick={() => toggleSort(sortKey)}
-      >
+      <button type="button" className="flex items-center gap-1 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-tmcc/30 rounded" onClick={() => toggleSort(sk)}>
         {label}
-        {pendingSortKey === sortKey ? (
-          pendingSortDir === 'asc' ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />
-        ) : (
-          <span className="w-4 h-4 inline-block opacity-40"><FiChevronUp className="w-3 h-3" /></span>
-        )}
+        {sortKey === sk ? (sortDir === 'asc' ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />) : <span className="w-4 h-4 inline-block opacity-40"><FiChevronUp className="w-3 h-3" /></span>}
       </button>
     </th>
   );
 
-  const pendingFiltered = useMemo(() => {
+  const filtered = useMemo(() => {
     let list = pendingRequests.filter((r) => {
-      const matchSearch = !pendingSearch || [r.student_name, r.record_type, r.purpose].some((v) =>
-        String(v || '').toLowerCase().includes(pendingSearch.toLowerCase())
-      );
-      const matchType = !pendingFilterType || r.record_type === pendingFilterType;
+      const matchSearch = !search || [r.student_name, r.record_type, r.purpose].some((v) => String(v || '').toLowerCase().includes(search.toLowerCase()));
+      const matchType = !filterType || r.record_type === filterType;
       return matchSearch && matchType;
     });
-    return sortData(list, pendingSortKey, pendingSortDir);
-  }, [pendingRequests, pendingSearch, pendingFilterType, pendingSortKey, pendingSortDir]);
+    return sortData(list, sortKey, sortDir);
+  }, [pendingRequests, search, filterType, sortKey, sortDir]);
 
-  const pendingPaginated = useMemo(() => {
-    const start = (pendingPage - 1) * pendingEntries;
-    return pendingFiltered.slice(start, start + pendingEntries);
-  }, [pendingFiltered, pendingPage, pendingEntries]);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * entries;
+    return filtered.slice(start, start + entries);
+  }, [filtered, page, entries]);
 
-  const pendingRecordTypes = useMemo(() => [...new Set(pendingRequests.map((r) => r.record_type))], [pendingRequests]);
-
+  const recordTypes = useMemo(() => [...new Set(pendingRequests.map((r) => r.record_type))], [pendingRequests]);
   const isApprove = confirmAction?.type === 'approve';
 
   return (
@@ -114,40 +100,31 @@ const StaffPendingRequestsPage = () => {
       </section>
       <section className="bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="mt-0 mb-4 text-lg font-semibold text-gray-800">Pending Record Requests</h3>
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[200px] max-w-md">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="search"
                 placeholder="Search..."
-                value={pendingSearch}
-                onChange={(e) => { setPendingSearch(e.target.value); setPendingPage(1); }}
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
                 aria-label="Search pending requests"
               />
             </div>
             <select
-              value={pendingFilterType}
-              onChange={(e) => { setPendingFilterType(e.target.value); setPendingPage(1); }}
+              value={filterType}
+              onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
               className="py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
               aria-label="Filter by record type"
             >
               <option value="">All record types</option>
-              {pendingRecordTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
+              {recordTypes.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Show</span>
-              <select
-                value={pendingEntries}
-                onChange={(e) => { setPendingEntries(Number(e.target.value)); setPendingPage(1); }}
-                className="py-1.5 px-2 border border-gray-300 rounded text-sm"
-              >
-                {ENTRIES_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
+              <select value={entries} onChange={(e) => { setEntries(Number(e.target.value)); setPage(1); }} className="py-1.5 px-2 border border-gray-300 rounded text-sm">
+                {ENTRIES_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
               <span>entries</span>
             </div>
@@ -165,8 +142,8 @@ const StaffPendingRequestsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {pendingPaginated.length > 0 ? (
-                pendingPaginated.map((req) => (
+              {paginated.length > 0 ? (
+                paginated.map((req) => (
                   <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
                     <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
                     <td className="py-3 px-4 text-gray-700">{req.record_type}</td>
@@ -186,9 +163,9 @@ const StaffPendingRequestsPage = () => {
             </tbody>
           </table>
         </div>
-        {pendingFiltered.length > 0 && (
+        {filtered.length > 0 && (
           <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
-            Showing {((pendingPage - 1) * pendingEntries) + 1} to {Math.min(pendingPage * pendingEntries, pendingFiltered.length)} of {pendingFiltered.length} entries
+            Showing {((page - 1) * entries) + 1} to {Math.min(page * entries, filtered.length)} of {filtered.length} entries
           </div>
         )}
       </section>
@@ -198,13 +175,7 @@ const StaffPendingRequestsPage = () => {
         onClose={() => !confirmLoading && setConfirmAction(null)}
         onConfirm={onConfirmAction}
         title={isApprove ? 'Approve request' : 'Reject request'}
-        message={
-          confirmAction
-            ? isApprove
-              ? `Approve the record request for ${confirmAction.student_name}? The request will move to Document Release.`
-              : `Reject the record request for ${confirmAction.student_name}? This action cannot be undone.`
-            : ''
-        }
+        message={confirmAction ? (isApprove ? `Approve the record request for ${confirmAction.student_name}? The request will move to Document Release.` : `Reject the record request for ${confirmAction.student_name}? This action cannot be undone.`) : ''}
         confirmLabel={isApprove ? 'Approve' : 'Reject'}
         cancelLabel="Cancel"
         variant={isApprove ? 'success' : 'danger'}
@@ -214,4 +185,4 @@ const StaffPendingRequestsPage = () => {
   );
 };
 
-export default StaffPendingRequestsPage;
+export default AdminPendingRequestsPage;

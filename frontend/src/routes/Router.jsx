@@ -1,11 +1,21 @@
 import React from 'react';
 import { createBrowserRouter, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sileo';
 import Navbar from '../components/Navbar';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import StudentDashboard from '../pages/StudentDashboard';
-import AdminDashboard from '../pages/AdminDashboard';
+import AdminLayout from '../layouts/AdminLayout';
+import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
+import AdminUserManagementPage from '../pages/admin/AdminUserManagementPage';
+import AdminPendingRequestsPage from '../pages/admin/AdminPendingRequestsPage';
+import AdminStudentRecordsPage from '../pages/admin/AdminStudentRecordsPage';
+import AdminNewStudentPage from '../pages/admin/AdminNewStudentPage';
+import AdminEditStudentPage from '../pages/admin/AdminEditStudentPage';
+import AdminDocumentReleasePage from '../pages/admin/AdminDocumentReleasePage';
+import AdminReportsPage from '../pages/admin/AdminReportsPage';
+import AdminSystemSettingsPage from '../pages/admin/AdminSystemSettingsPage';
 import StaffLayout from '../layouts/StaffLayout';
 import StaffDashboardPage from '../pages/StaffDashboardPage';
 import StaffPendingRequestsPage from '../pages/StaffPendingRequestsPage';
@@ -24,11 +34,13 @@ function RootLayout() {
   const isFullPage = location.pathname === '/' || location.pathname === '/signup';
   const isStudentDashboard = location.pathname === '/dashboard';
   const isStaffArea = location.pathname.startsWith('/staff');
+  const isAdminArea = location.pathname.startsWith('/admin');
 
   return (
     <>
-      {!isFullPage && !isStudentDashboard && !isStaffArea && <Navbar />}
-      {isFullPage || isStudentDashboard || isStaffArea ? (
+      <Toaster position="top-right" theme="light" />
+      {!isFullPage && !isStudentDashboard && !isStaffArea && !isAdminArea && <Navbar />}
+      {isFullPage || isStudentDashboard || isStaffArea || isAdminArea ? (
         <Outlet />
       ) : (
         <div className="container">
@@ -104,9 +116,20 @@ const router = createBrowserRouter([
         path: 'admin',
         element: (
           <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
+            <AdminLayout />
           </ProtectedRoute>
         ),
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
+          { path: 'users', element: <AdminUserManagementPage /> },
+          { path: 'requests', element: <AdminPendingRequestsPage /> },
+          { path: 'students', element: <AdminStudentRecordsPage /> },
+          { path: 'students/new', element: <AdminNewStudentPage /> },
+          { path: 'students/:id/edit', element: <AdminEditStudentPage /> },
+          { path: 'document-release', element: <AdminDocumentReleasePage /> },
+          { path: 'reports', element: <AdminReportsPage /> },
+          { path: 'settings', element: <AdminSystemSettingsPage /> },
+        ],
       },
       {
         path: 'request',

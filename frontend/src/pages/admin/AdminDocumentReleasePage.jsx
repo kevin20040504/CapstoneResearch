@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FiPackage, FiSearch, FiChevronUp, FiChevronDown } from 'react-icons/fi';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { staffToast } from '../lib/notifications';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { adminToast } from '../../lib/notifications';
 
 const ENTRIES_OPTIONS = [5, 10, 25, 50];
 
@@ -19,14 +19,14 @@ const sortData = (data, key, dir) => {
   });
 };
 
-const StaffDocumentReleasePage = () => {
+const AdminDocumentReleasePage = () => {
   const [approvedForRelease, setApprovedForRelease] = useState([]);
-  const [releaseSearch, setReleaseSearch] = useState('');
-  const [releaseFilterType, setReleaseFilterType] = useState('');
-  const [releaseSortKey, setReleaseSortKey] = useState('approved_at');
-  const [releaseSortDir, setReleaseSortDir] = useState('desc');
-  const [releaseEntries, setReleaseEntries] = useState(10);
-  const [releasePage, setReleasePage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [sortKey, setSortKey] = useState('approved_at');
+  const [sortDir, setSortDir] = useState('desc');
+  const [entries, setEntries] = useState(10);
+  const [page, setPage] = useState(1);
   const [releaseConfirm, setReleaseConfirm] = useState(null);
   const [releaseLoading, setReleaseLoading] = useState(false);
 
@@ -37,9 +37,7 @@ const StaffDocumentReleasePage = () => {
     ]);
   }, []);
 
-  const handleReleaseClick = (row) => {
-    setReleaseConfirm(row);
-  };
+  const handleReleaseClick = (row) => setReleaseConfirm(row);
 
   const onConfirmRelease = async () => {
     if (!releaseConfirm) return;
@@ -49,51 +47,38 @@ const StaffDocumentReleasePage = () => {
     setApprovedForRelease((prev) => prev.filter((r) => r.id !== id));
     setReleaseConfirm(null);
     setReleaseLoading(false);
-    staffToast.success('Document released', `${student_name}'s ${record_type} has been released and recorded.`);
+    adminToast.success('Document released', `${student_name}'s ${record_type} has been released and recorded.`);
   };
 
   const toggleSort = (key) => {
-    if (key === releaseSortKey) setReleaseSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else {
-      setReleaseSortKey(key);
-      setReleaseSortDir('asc');
-    }
+    if (key === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
   };
 
-  const SortableTh = ({ label, sortKey }) => (
+  const SortableTh = ({ label, sortKey: sk }) => (
     <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">
-      <button
-        type="button"
-        className="flex items-center gap-1 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-tmcc/30 rounded"
-        onClick={() => toggleSort(sortKey)}
-      >
+      <button type="button" className="flex items-center gap-1 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-tmcc/30 rounded" onClick={() => toggleSort(sk)}>
         {label}
-        {releaseSortKey === sortKey ? (
-          releaseSortDir === 'asc' ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />
-        ) : (
-          <span className="w-4 h-4 inline-block opacity-40"><FiChevronUp className="w-3 h-3" /></span>
-        )}
+        {sortKey === sk ? (sortDir === 'asc' ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />) : <span className="w-4 h-4 inline-block opacity-40"><FiChevronUp className="w-3 h-3" /></span>}
       </button>
     </th>
   );
 
-  const releaseFiltered = useMemo(() => {
+  const filtered = useMemo(() => {
     let list = approvedForRelease.filter((r) => {
-      const matchSearch = !releaseSearch || [r.student_name, r.record_type, r.purpose].some((v) =>
-        String(v || '').toLowerCase().includes(releaseSearch.toLowerCase())
-      );
-      const matchType = !releaseFilterType || r.record_type === releaseFilterType;
+      const matchSearch = !search || [r.student_name, r.record_type, r.purpose].some((v) => String(v || '').toLowerCase().includes(search.toLowerCase()));
+      const matchType = !filterType || r.record_type === filterType;
       return matchSearch && matchType;
     });
-    return sortData(list, releaseSortKey, releaseSortDir);
-  }, [approvedForRelease, releaseSearch, releaseFilterType, releaseSortKey, releaseSortDir]);
+    return sortData(list, sortKey, sortDir);
+  }, [approvedForRelease, search, filterType, sortKey, sortDir]);
 
-  const releasePaginated = useMemo(() => {
-    const start = (releasePage - 1) * releaseEntries;
-    return releaseFiltered.slice(start, start + releaseEntries);
-  }, [releaseFiltered, releasePage, releaseEntries]);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * entries;
+    return filtered.slice(start, start + entries);
+  }, [filtered, page, entries]);
 
-  const releaseRecordTypes = useMemo(() => [...new Set(approvedForRelease.map((r) => r.record_type))], [approvedForRelease]);
+  const recordTypes = useMemo(() => [...new Set(approvedForRelease.map((r) => r.record_type))], [approvedForRelease]);
 
   return (
     <>
@@ -111,33 +96,25 @@ const StaffDocumentReleasePage = () => {
               <input
                 type="search"
                 placeholder="Search..."
-                value={releaseSearch}
-                onChange={(e) => { setReleaseSearch(e.target.value); setReleasePage(1); }}
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
                 aria-label="Search document release"
               />
             </div>
             <select
-              value={releaseFilterType}
-              onChange={(e) => { setReleaseFilterType(e.target.value); setReleasePage(1); }}
+              value={filterType}
+              onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
               className="py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
               aria-label="Filter by record type"
             >
               <option value="">All record types</option>
-              {releaseRecordTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
+              {recordTypes.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Show</span>
-              <select
-                value={releaseEntries}
-                onChange={(e) => { setReleaseEntries(Number(e.target.value)); setReleasePage(1); }}
-                className="py-1.5 px-2 border border-gray-300 rounded text-sm"
-              >
-                {ENTRIES_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
+              <select value={entries} onChange={(e) => { setEntries(Number(e.target.value)); setPage(1); }} className="py-1.5 px-2 border border-gray-300 rounded text-sm">
+                {ENTRIES_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
               <span>entries</span>
             </div>
@@ -155,8 +132,8 @@ const StaffDocumentReleasePage = () => {
               </tr>
             </thead>
             <tbody>
-              {releasePaginated.length > 0 ? (
-                releasePaginated.map((req) => (
+              {paginated.length > 0 ? (
+                paginated.map((req) => (
                   <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
                     <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
                     <td className="py-3 px-4 text-gray-700">{req.record_type}</td>
@@ -179,9 +156,9 @@ const StaffDocumentReleasePage = () => {
             </tbody>
           </table>
         </div>
-        {releaseFiltered.length > 0 && (
+        {filtered.length > 0 && (
           <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
-            Showing {((releasePage - 1) * releaseEntries) + 1} to {Math.min(releasePage * releaseEntries, releaseFiltered.length)} of {releaseFiltered.length} entries
+            Showing {((page - 1) * entries) + 1} to {Math.min(page * entries, filtered.length)} of {filtered.length} entries
           </div>
         )}
       </section>
@@ -191,11 +168,7 @@ const StaffDocumentReleasePage = () => {
         onClose={() => !releaseLoading && setReleaseConfirm(null)}
         onConfirm={onConfirmRelease}
         title="Release document"
-        message={
-          releaseConfirm
-            ? `Record the release of ${releaseConfirm.record_type} for ${releaseConfirm.student_name}? This will log the transaction.`
-            : ''
-        }
+        message={releaseConfirm ? `Record the release of ${releaseConfirm.record_type} for ${releaseConfirm.student_name}? This will log the transaction.` : ''}
         confirmLabel="Release"
         cancelLabel="Cancel"
         variant="success"
@@ -205,4 +178,4 @@ const StaffDocumentReleasePage = () => {
   );
 };
 
-export default StaffDocumentReleasePage;
+export default AdminDocumentReleasePage;

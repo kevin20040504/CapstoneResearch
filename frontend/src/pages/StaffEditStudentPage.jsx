@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 import { staffApi } from '../lib/api/staffApi';
+import { staffToast } from '../lib/notifications';
 
 const defaultForm = {
   student_number: '',
@@ -24,7 +25,7 @@ const formatDateForInput = (val) => {
   return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
 };
 
-const StaffEditStudentPage = () => {
+const StaffEditStudentPage = ({ basePath = '/staff' }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -165,12 +166,18 @@ const StaffEditStudentPage = () => {
         GPA: form.GPA !== '' ? parseFloat(form.GPA) : null,
       });
       setSubmitStatus('success');
-      setTimeout(() => navigate('/staff/students'), 1500);
+      staffToast.success('Student updated', 'Record saved successfully. Redirecting to Student Records.');
+      setTimeout(() => navigate(`${basePath}/students`), 1500);
     } catch (err) {
-      const msg = err?.response?.data?.message ?? err?.response?.data?.errors
-        ? Object.values(err.response.data.errors).flat().join(' ')
-        : 'Failed to update student.';
+      const data = err?.response?.data;
+      let msg = data?.message || 'Failed to update student.';
+      const errors = data?.errors;
+      if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
+        const parts = Object.values(errors).flat().filter(Boolean);
+        if (parts.length) msg = parts.join(' ');
+      }
       setSubmitStatus(msg);
+      staffToast.error('Update failed', msg);
     } finally {
       setLoading(false);
     }
@@ -191,7 +198,7 @@ const StaffEditStudentPage = () => {
 
   return (
     <>
-      <Link to="/staff/students" className="inline-flex items-center gap-2 mb-6 text-tmcc text-sm font-medium no-underline hover:text-tmcc-dark hover:underline">
+      <Link to={`${basePath}/students`} className="inline-flex items-center gap-2 mb-6 text-tmcc text-sm font-medium no-underline hover:text-tmcc-dark hover:underline">
         <FiArrowLeft /> Back to Student Records
       </Link>
 
@@ -340,7 +347,7 @@ const StaffEditStudentPage = () => {
                   <button type="submit" className="py-2.5 px-5 rounded-lg text-base font-medium bg-tmcc text-white hover:bg-tmcc-dark disabled:opacity-70 disabled:cursor-not-allowed" disabled={loading}>
                     {loading ? 'Saving...' : 'Save Changes'}
                   </button>
-                  <Link to="/staff/students" className="py-2.5 px-5 rounded-lg text-base font-medium bg-gray-600 text-white hover:bg-gray-700 no-underline inline-block" onClick={(e) => loading && e.preventDefault()}>
+                  <Link to={`${basePath}/students`} className="py-2.5 px-5 rounded-lg text-base font-medium bg-gray-600 text-white hover:bg-gray-700 no-underline inline-block" onClick={(e) => loading && e.preventDefault()}>
                     Cancel
                   </Link>
                 </>

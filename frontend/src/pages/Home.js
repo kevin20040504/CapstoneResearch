@@ -45,9 +45,13 @@ const Home = () => {
     try {
       await login({ username: user, password: pass });
     } catch (err) {
-      const msg = err?.response?.data?.errors
-        ? Object.values(err.response.data.errors).flat().join(' ')
-        : err?.response?.data?.message || err?.message || 'Login failed. Please try again.';
+      const data = err?.response?.data;
+      let msg = data?.message || err?.message || 'Login failed. Please try again.';
+      const errors = data?.errors;
+      if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
+        const parts = Object.values(errors).flat().filter(Boolean);
+        if (parts.length) msg = parts.join(' ');
+      }
       setError(msg);
     }
   };

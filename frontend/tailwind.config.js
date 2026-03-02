@@ -20,6 +20,7 @@ module.exports = {
           'sy-yellow': '#ffcd39',
           'sy-green': '#28a745',
         },
+        'staff-red': '#dc3545',
       },
     },
   },

@@ -11,7 +11,8 @@ import {
   FiUser,
   FiGrid,
   FiCheckCircle,
-  FiShield,
+  FiSettings,
+  FiUserPlus,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
@@ -23,8 +24,8 @@ const MOCK_KPI = {
   documentsReleased: 8,
 };
 
-const StaffLayout = () => {
-  const { user, role, logout, logoutMutation } = useAuth();
+const AdminLayout = () => {
+  const { user, logout, logoutMutation } = useAuth();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState('');
   const [currentDate, setCurrentDate] = useState('');
@@ -58,23 +59,24 @@ const StaffLayout = () => {
   }, []);
 
   const pathname = location.pathname;
-  const isNewStudentPage = pathname === '/staff/students/new';
+  const isNewStudentPage = pathname === '/admin/students/new';
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/staff' },
-    { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/staff/requests' },
-    { id: 'students', label: 'Student Records', icon: FiUsers, path: '/staff/students' },
-    { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/staff/document-release' },
-    { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/staff/reports' },
+    { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/admin' },
+    { id: 'users', label: 'User Management', icon: FiUserPlus, path: '/admin/users' },
+    { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/admin/requests' },
+    { id: 'students', label: 'Student Records', icon: FiUsers, path: '/admin/students' },
+    { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/admin/document-release' },
+    { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/admin/reports' },
+    { id: 'settings', label: 'System Settings', icon: FiSettings, path: '/admin/settings' },
   ];
 
   const handleChangePassword = () => setChangePasswordOpen(true);
 
-  const staffName = user?.name || user?.username || 'Registrar';
+  const adminName = user?.name || user?.username || 'Administrator';
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f8]">
-      {/* Left sidebar - solid green (image style) */}
       <aside className="w-[260px] min-w-[260px] flex flex-col bg-[#1ac76a] text-white shadow-[2px_0_12px_rgba(0,0,0,0.08)]">
         <div className="px-5 py-6 border-b border-white/15 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden">
@@ -91,13 +93,13 @@ const StaffLayout = () => {
           </div>
           <div className="min-w-0">
             <h1 className="m-0 text-base font-semibold tracking-wide truncate">TMCC</h1>
-            <span className="text-xs opacity-90">Staff — ASRMS</span>
+            <span className="text-xs opacity-90">Admin — ASRMS</span>
           </div>
         </div>
 
-        <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5" aria-label="Staff dashboard navigation">
+        <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5" aria-label="Admin dashboard navigation">
           {navItems.map(({ id, label, icon: Icon, path }) => {
-            const isActive = !isNewStudentPage && (pathname === path || (path === '/staff/students' && pathname.startsWith('/staff/students')));
+            const isActive = !isNewStudentPage && (pathname === path || (path === '/admin/students' && pathname.startsWith('/admin/students')));
             return (
               <Link
                 key={id}
@@ -130,15 +132,13 @@ const StaffLayout = () => {
               <FiKey className="w-4 h-4" />
               Change Password
             </button>
-            {role === 'admin' && (
-              <Link
-                to="/admin"
-                className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-white/25 transition-colors no-underline"
-              >
-                <FiShield className="w-4 h-4" />
-                Admin Dashboard
-              </Link>
-            )}
+            <Link
+              to="/staff"
+              className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-white/25 transition-colors no-underline"
+            >
+              <FiUser className="w-4 h-4" />
+              Staff Dashboard
+            </Link>
             <button
               type="button"
               className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-red-500/40 hover:border-red-500/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
@@ -154,7 +154,6 @@ const StaffLayout = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header bar (image style) */}
         <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center rounded-full overflow-hidden">
@@ -164,7 +163,10 @@ const StaffLayout = () => {
             <span className="text-sm text-gray-500 ml-1">Active S.Y.</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-700">{staffName}</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-tmcc text-xs font-medium">
+              Admin
+            </span>
+            <span className="text-sm font-medium text-gray-700">{adminName}</span>
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
               <FiUser className="w-4 h-4 text-gray-600" />
             </div>
@@ -173,7 +175,7 @@ const StaffLayout = () => {
 
         <div className="bg-white border-b border-gray-100 px-6 py-4 shrink-0">
           <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Link to="/staff/requests" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
+            <Link to="/admin/requests" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
               <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 text-amber-700">
                 <FiInbox className="w-6 h-6" />
               </span>
@@ -191,7 +193,7 @@ const StaffLayout = () => {
                 <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Processed Today</p>
               </div>
             </div>
-            <Link to="/staff/students" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
+            <Link to="/admin/students" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
               <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 text-blue-700">
                 <FiUsers className="w-6 h-6" />
               </span>
@@ -200,7 +202,7 @@ const StaffLayout = () => {
                 <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Students</p>
               </div>
             </Link>
-            <Link to="/staff/document-release" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
+            <Link to="/admin/document-release" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
               <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700">
                 <FiPackage className="w-6 h-6" />
               </span>
@@ -224,4 +226,4 @@ const StaffLayout = () => {
   );
 };
 
-export default StaffLayout;
+export default AdminLayout;

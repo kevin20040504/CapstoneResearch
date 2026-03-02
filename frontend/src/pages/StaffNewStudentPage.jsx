@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiArrowLeft, FiArrowRight, FiCheck } from 'react-icons/fi';
+import { staffToast } from '../lib/notifications';
+import Modal from '../components/ui/Modal';
 
 const defaultForm = {
   student_number: '',
@@ -17,7 +19,8 @@ const defaultForm = {
 
 const TOTAL_PHASES = 3;
 
-const StaffNewStudentPage = () => {
+const StaffNewStudentPage = ({ basePath = '/staff' }) => {
+  const navigate = useNavigate();
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -98,6 +101,7 @@ const StaffNewStudentPage = () => {
     setErrors({});
     setCurrentPhase(1);
     setLoading(false);
+    staffToast.success('Student created', `Account ${form.student_number.trim()} has been registered.`);
   };
 
   const clearForm = () => {
@@ -108,13 +112,18 @@ const StaffNewStudentPage = () => {
     setCurrentPhase(1);
   };
 
+  const closeSuccessModal = () => {
+    setCreatedAccount(null);
+    setSubmitStatus(null);
+  };
+
   const inputBase = 'py-2.5 px-4 rounded-lg text-base border transition-colors focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';
   const inputError = 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20';
   const inputNormal = 'border-gray-300';
 
   return (
     <>
-      <Link to="/staff/students" className="inline-flex items-center gap-2 mb-6 text-tmcc text-sm font-medium no-underline hover:text-tmcc-dark hover:underline">
+      <Link to={`${basePath}/students`} className="inline-flex items-center gap-2 mb-6 text-tmcc text-sm font-medium no-underline hover:text-tmcc-dark hover:underline">
         <FiArrowLeft /> Back to Student Records
       </Link>
 
@@ -277,6 +286,32 @@ const StaffNewStudentPage = () => {
         </form>
         </div>
       </section>
+
+      <Modal isOpen={!!createdAccount} onClose={closeSuccessModal} title="Student created" titleId="create-success-title" maxWidth="max-w-md">
+        <div className="p-6">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200 mb-4">
+            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white">
+              <FiCheck className="w-5 h-5" />
+            </span>
+            <p className="m-0 text-sm text-green-800 font-medium">Student and login account have been created successfully.</p>
+          </div>
+          {createdAccount && (
+            <div className="mb-4 p-4 rounded-lg bg-gray-50 border border-gray-200 text-sm">
+              <p className="m-0 mb-2 font-medium text-gray-700">Credentials (share securely):</p>
+              <p className="m-0"><strong>Username:</strong> <code className="px-1.5 py-0.5 rounded bg-gray-200 font-mono">{createdAccount.username}</code></p>
+              <p className="m-0 mt-1"><strong>Password:</strong> <code className="px-1.5 py-0.5 rounded bg-gray-200 font-mono">{createdAccount.password}</code></p>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3 justify-end">
+            <button type="button" onClick={() => { closeSuccessModal(); clearForm(); }} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30">
+              Add another
+            </button>
+            <button type="button" onClick={() => { closeSuccessModal(); navigate(`${basePath}/students`); }} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500/30">
+              Go to Student Records
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };
