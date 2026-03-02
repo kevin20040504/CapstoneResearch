@@ -25,7 +25,6 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Redirect authenticated users to their role-based dashboard (after hooks)
   if (isAuthenticated) {
     return <Navigate to={ROLE_ROUTES[role] || '/dashboard'} replace />;
   }

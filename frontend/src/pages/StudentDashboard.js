@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   FiKey,
   FiLogOut,
@@ -11,9 +11,10 @@ import {
   FiBook,
   FiPrinter,
 } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
 
 const StudentDashboard = () => {
-  const navigate = useNavigate();
+  const { logout, logoutMutation } = useAuth();
   const [currentTime, setCurrentTime] = useState('');
   const [currentDate, setCurrentDate] = useState('');
   const [student, setStudent] = useState(null);
@@ -48,7 +49,7 @@ const StudentDashboard = () => {
     });
   }, []);
 
-  const handleSignOut = () => navigate('/');
+  const handleSignOut = () => logout();
   const handleChangePassword = () => {};
 
   if (!student) return <div className="sd-loading">Loading...</div>;
@@ -74,9 +75,15 @@ const StudentDashboard = () => {
               <FiKey className="sd-icon" />
               Change Password
             </button>
-            <button type="button" className="sd-link-btn sd-signout" onClick={handleSignOut} aria-label="Sign out">
+            <button
+              type="button"
+              className="sd-link-btn sd-signout"
+              onClick={handleSignOut}
+              disabled={logoutMutation.isPending}
+              aria-label="Sign out"
+            >
               <FiLogOut className="sd-icon" />
-              Sign-out
+              {logoutMutation.isPending ? 'Signing out...' : 'Sign-out'}
             </button>
           </div>
         </div>

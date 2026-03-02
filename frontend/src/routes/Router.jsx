@@ -30,7 +30,6 @@ function RootLayout() {
   );
 }
 
-/** Protects routes that require authentication. */
 function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, role, isLoading } = useAuth();
 
