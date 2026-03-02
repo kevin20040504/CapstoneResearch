@@ -1,0 +1,165 @@
+import React, { useState, useEffect } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import {
+  FiInbox,
+  FiUsers,
+  FiBarChart2,
+  FiKey,
+  FiLogOut,
+  FiPackage,
+  FiChevronRight,
+  FiUser,
+  FiGrid,
+} from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
+
+const StaffLayout = () => {
+  const { user, logout, logoutMutation } = useAuth();
+  const location = useLocation();
+  const [currentTime, setCurrentTime] = useState('');
+  const [currentDate, setCurrentDate] = useState('');
+  const [logoError, setLogoError] = useState(false);
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      setCurrentDate(
+        now.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      );
+      setCurrentTime(
+        now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        })
+      );
+    };
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pathname = location.pathname;
+  const isNewStudentPage = pathname === '/staff/students/new';
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/staff' },
+    { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/staff/requests' },
+    { id: 'students', label: 'Student Records', icon: FiUsers, path: '/staff/students' },
+    { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/staff/document-release' },
+    { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/staff/reports' },
+  ];
+
+  const handleChangePassword = () => {
+    // TODO: open change password modal or navigate
+  };
+
+  const staffName = user?.name || user?.username || 'Registrar';
+
+  return (
+    <div className="flex min-h-screen bg-[#f4f6f8]">
+      {/* Left sidebar - solid green (image style) */}
+      <aside className="w-[260px] min-w-[260px] flex flex-col bg-[#1ac76a] text-white shadow-[2px_0_12px_rgba(0,0,0,0.08)]">
+        <div className="px-5 py-6 border-b border-white/15 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden">
+            {!logoError ? (
+              <img
+                src="/logo.png"
+                alt="TMCC Logo"
+                className="w-full h-full object-contain"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <span className="text-sm font-bold text-tmcc">TMCC</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h1 className="m-0 text-base font-semibold tracking-wide truncate">TMCC</h1>
+            <span className="text-xs opacity-90">Staff — ASRMS</span>
+          </div>
+        </div>
+
+        <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5" aria-label="Staff dashboard navigation">
+          {navItems.map(({ id, label, icon: Icon, path }) => {
+            const isActive = !isNewStudentPage && (pathname === path || (path === '/staff/students' && pathname.startsWith('/staff/students')));
+            return (
+              <Link
+                key={id}
+                to={path}
+                className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left no-underline transition-colors ${
+                  isActive ? 'bg-white/25 text-white font-semibold' : 'text-white/95 hover:bg-white/15 hover:text-white'
+                }`}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <Icon className="w-5 h-5 shrink-0" aria-hidden />
+                <span className="flex-1">{label}</span>
+                <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 pt-4 border-t border-white/15">
+          <div className="text-xs mb-3 leading-snug text-white/90">
+            <span className="block font-medium">{currentDate}</span>
+            <span>{currentTime}</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-white/25 transition-colors"
+              onClick={handleChangePassword}
+              aria-label="Change Password"
+            >
+              <FiKey className="w-4 h-4" />
+              Change Password
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-red-500/40 hover:border-red-500/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              onClick={() => logout()}
+              disabled={logoutMutation.isPending}
+              aria-label="Sign out"
+            >
+              <FiLogOut className="w-4 h-4" />
+              {logoutMutation.isPending ? 'Signing out...' : 'Sign out'}
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top header bar (image style) */}
+        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full overflow-hidden">
+              <span className="bg-staff-sy-yellow text-gray-900 px-3 py-1 text-sm font-medium">2025-2026</span>
+              <span className="bg-staff-sy-green text-white px-3 py-1 text-sm font-medium">2nd Semester</span>
+            </span>
+            <span className="text-sm text-gray-500 ml-1">Active S.Y.</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">{staffName}</span>
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+              <FiUser className="w-4 h-4 text-gray-600" />
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto py-6 px-8">
+          <div className="max-w-[1100px] mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default StaffLayout;

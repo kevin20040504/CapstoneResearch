@@ -6,6 +6,14 @@ import Home from '../pages/Home';
 import Login from '../pages/Login';
 import StudentDashboard from '../pages/StudentDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
+import StaffLayout from '../layouts/StaffLayout';
+import StaffDashboardPage from '../pages/StaffDashboardPage';
+import StaffPendingRequestsPage from '../pages/StaffPendingRequestsPage';
+import StaffStudentRecordsPage from '../pages/StaffStudentRecordsPage';
+import StaffDocumentReleasePage from '../pages/StaffDocumentReleasePage';
+import StaffReportsPage from '../pages/StaffReportsPage';
+import StaffNewStudentPage from '../pages/StaffNewStudentPage';
+import StaffEditStudentPage from '../pages/StaffEditStudentPage';
 import RecordRequest from '../pages/RecordRequest';
 import StudentSignup from '../pages/StudentSignup';
 import { AuthProvider, useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
@@ -15,11 +23,12 @@ function RootLayout() {
   const location = useLocation();
   const isFullPage = location.pathname === '/' || location.pathname === '/signup';
   const isStudentDashboard = location.pathname === '/dashboard';
+  const isStaffArea = location.pathname.startsWith('/staff');
 
   return (
     <>
-      {!isFullPage && !isStudentDashboard && <Navbar />}
-      {isFullPage || isStudentDashboard ? (
+      {!isFullPage && !isStudentDashboard && !isStaffArea && <Navbar />}
+      {isFullPage || isStudentDashboard || isStaffArea ? (
         <Outlet />
       ) : (
         <div className="container">
@@ -75,9 +84,26 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'staff',
+        element: (
+          <ProtectedRoute allowedRoles={['staff', 'admin']}>
+            <StaffLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <StaffDashboardPage /> },
+          { path: 'requests', element: <StaffPendingRequestsPage /> },
+          { path: 'students', element: <StaffStudentRecordsPage /> },
+          { path: 'students/new', element: <StaffNewStudentPage /> },
+          { path: 'students/:id/edit', element: <StaffEditStudentPage /> },
+          { path: 'document-release', element: <StaffDocumentReleasePage /> },
+          { path: 'reports', element: <StaffReportsPage /> },
+        ],
+      },
+      {
         path: 'admin',
         element: (
-          <ProtectedRoute allowedRoles={['admin', 'staff']}>
+          <ProtectedRoute allowedRoles={['admin']}>
             <AdminDashboard />
           </ProtectedRoute>
         ),

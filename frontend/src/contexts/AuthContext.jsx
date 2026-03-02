@@ -33,7 +33,7 @@ export const getUserRole = (user) => {
  */
 export const ROLE_ROUTES = {
   admin: '/admin',
-  staff: '/admin',
+  staff: '/staff',
   student: '/dashboard',
 };
 

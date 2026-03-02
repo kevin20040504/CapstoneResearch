@@ -16,7 +16,13 @@ const Navbar = () => {
           <>
             <Link to="/dashboard">Dashboard</Link>
             <Link to="/request">Request Record</Link>
-            {(role === 'admin' || role === 'staff') && <Link to="/admin">Admin</Link>}
+            {role === 'staff' && <Link to="/staff">Staff Dashboard</Link>}
+            {role === 'admin' && (
+              <>
+                <Link to="/staff">Process Requests</Link>
+                <Link to="/admin">Admin</Link>
+              </>
+            )}
             <span className="navbar-user">{user?.name || user?.username}</span>
             <button
               type="button"
