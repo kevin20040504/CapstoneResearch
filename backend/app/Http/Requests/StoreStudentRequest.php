@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreStudentRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Rules aligned with students table schema and thesis requirements.
+     *
+     */
+    public function rules(): array
+    {
+        return [
+            'student_number' => ['required', 'string', 'max:20', 'unique:students,student_number', 'unique:users,username'],
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name' => ['required', 'string', 'max:50'],
+            'date_of_birth' => ['required', 'date', 'before:today'],
+            'email' => ['required', 'string', 'email', 'max:100', 'unique:students,email', 'unique:users,email'],
+            'contact_number' => ['nullable', 'string', 'max:15'],
+            'address' => ['nullable', 'string', 'max:150'],
+            'enrollment_date' => ['required', 'date'],
+            'graduation_date' => ['nullable', 'date', 'after_or_equal:enrollment_date'],
+            'GPA' => ['nullable', 'numeric', 'min:0', 'max:5.00'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'student_number.unique' => 'This student number is already registered.',
+            'email.unique' => 'This email is already registered.',
+        ];
+    }
+}
