@@ -1,19 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-const Navbar = () => (
-  <nav className="navbar">
-    <div className="brand">
-      <Link to="/">ASRMS</Link>
-    </div>
-    <div className="links">
-      <Link to="/">Home</Link>
-      <Link to="/dashboard">Dashboard</Link>
-      <Link to="/request">Request Record</Link>
-      <Link to="/admin">Admin</Link>
-      <Link to="/login">Login</Link>
-    </div>
-  </nav>
-);
+const Navbar = () => {
+  const { isAuthenticated, user, role, logout, logoutMutation } = useAuth();
+
+  return (
+    <nav className="navbar">
+      <div className="brand">
+        <Link to="/">ASRMS</Link>
+      </div>
+      <div className="links">
+        <Link to="/">Home</Link>
+        {isAuthenticated && (
+          <>
+            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/request">Request Record</Link>
+            {role === 'staff' && <Link to="/staff">Staff Dashboard</Link>}
+            {role === 'admin' && (
+              <>
+                <Link to="/staff">Process Requests</Link>
+                <Link to="/admin">Admin</Link>
+              </>
+            )}
+            <span className="navbar-user">{user?.name || user?.username}</span>
+            <button
+              type="button"
+              className="navbar-logout"
+              onClick={() => logout()}
+              disabled={logoutMutation.isPending}
+            >
+              Logout
+            </button>
+          </>
+        )}
+        {!isAuthenticated && <Link to="/">Login</Link>}
+      </div>
+    </nav>
+  );
+};
 
 export default Navbar;

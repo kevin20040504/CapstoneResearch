@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY', '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'),
+        'secret' => env('RECAPTCHA_SECRET_KEY', '6LeIxAcTAAAAAGG-vF1HeHMqzPO8gnkpGQQpG5LH'), 
+    ],
+
 ];

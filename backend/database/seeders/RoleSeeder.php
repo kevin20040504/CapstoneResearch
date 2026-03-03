@@ -19,6 +19,7 @@ class RoleSeeder extends Seeder
         echo "Creating roles...\n";
         Role::create(['name' => 'admin', 'guard_name' => 'api']);
         Role::create(['name' => 'staff', 'guard_name' => 'api']);
+        Role::create(['name' => 'student', 'guard_name' => 'api']);
         echo "Roles created successfully\n";
 
         // create permissions

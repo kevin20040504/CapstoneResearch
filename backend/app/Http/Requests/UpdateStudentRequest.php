@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateStudentRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Rules aligned with students table schema. Unique rules ignore current student.
+     */
+    public function rules(): array
+    {
+        $studentId = $this->route('id');
+        $student = \App\Models\Student::find($studentId);
+        $userId = $student?->user_id;
+
+        return [
+            'student_number' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('students', 'student_number')->ignore($studentId, 'student_id'),
+                Rule::unique('users', 'username')->ignore($userId),
+            ],
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name' => ['required', 'string', 'max:50'],
+            'date_of_birth' => ['required', 'date', 'before:today'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:100',
+                Rule::unique('students', 'email')->ignore($studentId, 'student_id'),
+                Rule::unique('users', 'email')->ignore($userId),
+            ],
+            'contact_number' => ['nullable', 'string', 'max:15'],
+            'address' => ['nullable', 'string', 'max:150'],
+            'enrollment_date' => ['required', 'date'],
+            'graduation_date' => ['nullable', 'date', 'after_or_equal:enrollment_date'],
+            'GPA' => ['nullable', 'numeric', 'min:0', 'max:5.00'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'student_number.unique' => 'This student number is already registered.',
+            'email.unique' => 'This email is already registered.',
+        ];
+    }
+}

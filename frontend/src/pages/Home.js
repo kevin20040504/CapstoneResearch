@@ -1,24 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import ReCAPTCHA from 'react-google-recaptcha';
-
-const RECAPTCHA_SITE_KEY = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
-
-const RECAPTCHA_COMPACT_BREAKPOINT = 400;
+import React, { useState, useEffect } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { ROLE_ROUTES } from '../contexts/AuthContext';
 
 const Home = () => {
+  const { login, isAuthenticated, role, loginMutation } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
   const [currentDate, setCurrentDate] = useState('');
-  const [recaptchaSize, setRecaptchaSize] = useState(
-    typeof window !== 'undefined' && window.innerWidth < RECAPTCHA_COMPACT_BREAKPOINT ? 'compact' : 'normal'
-  );
-  const recaptchaRef = useRef(null);
-  const navigate = useNavigate();
+
+  const isSubmitting = loginMutation.isPending;
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -31,19 +25,11 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const onResize = () => {
-      setRecaptchaSize(window.innerWidth < RECAPTCHA_COMPACT_BREAKPOINT ? 'compact' : 'normal');
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  if (isAuthenticated) {
+    return <Navigate to={ROLE_ROUTES[role] || '/dashboard'} replace />;
+  }
 
-  const handleCaptchaChange = (token) => {
-    if (token) setError((e) => (e && e.includes('reCAPTCHA') ? '' : e));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     const user = username.trim();
@@ -56,14 +42,18 @@ const Home = () => {
       setError('Please enter your password.');
       return;
     }
-    const token = recaptchaRef.current?.getValue?.();
-    if (!token) {
-      setError('Please complete the reCAPTCHA verification.');
-      return;
+    try {
+      await login({ username: user, password: pass });
+    } catch (err) {
+      const data = err?.response?.data;
+      let msg = data?.message || err?.message || 'Login failed. Please try again.';
+      const errors = data?.errors;
+      if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
+        const parts = Object.values(errors).flat().filter(Boolean);
+        if (parts.length) msg = parts.join(' ');
+      }
+      setError(msg);
     }
-    setIsSubmitting(true);
-    console.log('logging in', { username: user, password: pass, recaptchaToken: token });
-    navigate('/dashboard');
   };
 
   return (
@@ -201,18 +191,6 @@ const Home = () => {
                     </div>
                   </div>
                   <p className="sd-login-hint">* Password is case sensitive</p>
-                </div>
-
-                <div className="sd-login-recaptcha">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={RECAPTCHA_SITE_KEY}
-                    onChange={handleCaptchaChange}
-                    onExpired={() => {}}
-                    theme="light"
-                    size={recaptchaSize}
-                    aria-label="Complete reCAPTCHA verification"
-                  />
                 </div>
 
                 <button
