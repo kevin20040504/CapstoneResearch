@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\RejectRecordRequestRequest;
 use App\Models\RecordRequest;
 use App\Models\RecordTransaction;
+use App\Models\Staff;
 use App\Services\StaffService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -189,13 +190,49 @@ class RequestController extends Controller
         if (! $recordRequest) {
             return response()->json(['message' => 'Record request not found.'], 404);
         }
-        if ($recordRequest->status !== RecordRequest::STATUS_APPROVED) {
-            return response()->json(['message' => 'Only approved requests can be released.'], 422);
+
+        $staff = $this->staffService->getOrCreateStaffForUser($request->user());
+        if (! $staff) {
+            return response()->json(['message' => 'Staff record not available.'], 403);
+        }
+
+        return $this->doRelease($recordRequest, $staff);
+    }
+
+    /**
+     * Create a transaction (e.g. document release)
+     */
+    public function storeTransaction(Request $request): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+
+        $validated = $request->validate([
+            'request_id' => ['required', 'integer', 'exists:record_requests,id'],
+            'transaction_type' => ['required', 'string', 'in:release'],
+        ]);
+
+        $recordRequest = RecordRequest::find($validated['request_id']);
+        if (! $recordRequest) {
+            return response()->json(['message' => 'Record request not found.'], 404);
         }
 
         $staff = $this->staffService->getOrCreateStaffForUser($request->user());
         if (! $staff) {
             return response()->json(['message' => 'Staff record not available.'], 403);
+        }
+
+        return $this->doRelease($recordRequest, $staff);
+    }
+
+    private function doRelease(RecordRequest $recordRequest, Staff $staff): JsonResponse
+    {
+        if ($recordRequest->status !== RecordRequest::STATUS_APPROVED) {
+            return response()->json(['message' => 'Only approved requests can be released.'], 422);
         }
 
         $recordRequest->update([
