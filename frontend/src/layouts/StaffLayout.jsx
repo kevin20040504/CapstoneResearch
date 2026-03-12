@@ -119,7 +119,14 @@ const StaffLayout = () => {
                 aria-current={isActive ? 'page' : undefined}
               >
                 <Icon className="w-5 h-5 shrink-0" aria-hidden />
-                <span className="flex-1">{label}</span>
+                <span className="flex-1 flex items-center gap-2">
+                  <span>{label}</span>
+                  {id === 'requests' && kpi.pendingRequests > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full bg-white text-[#1ac76a] text-xs font-semibold">
+                      {kpi.pendingRequests}
+                    </span>
+                  )}
+                </span>
                 <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
               </Link>
             );
@@ -175,6 +182,12 @@ const StaffLayout = () => {
             <span className="text-sm text-gray-500 ml-1">Active S.Y.</span>
           </div>
           <div className="flex items-center gap-4">
+            {kpi.pendingRequests > 0 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+                <FiInbox className="w-3 h-3" />
+                <span>Pending: {kpi.pendingRequests}</span>
+              </span>
+            )}
             <span className="text-sm font-medium text-gray-700">{staffName}</span>
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
               <FiUser className="w-4 h-4 text-gray-600" />
