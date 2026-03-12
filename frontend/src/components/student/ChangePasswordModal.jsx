@@ -1,0 +1,197 @@
+import React, { useState } from 'react';
+import Modal from '../ui/Modal';
+import { authApi } from '../../lib/api/authApi';
+import { parseApiError } from '../../lib/api/errors';
+import { staffToast } from '../../lib/notifications';
+
+/**
+ * Student change password: step 1 = Account Verification (current password),
+ */
+const ChangePasswordModal = ({ isOpen, onClose }) => {
+  const [step, setStep] = useState(1);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const resetForm = () => {
+    setStep(1);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setErrors({});
+    setLoading(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const validateStep1 = () => {
+    if (!currentPassword.trim()) {
+      setErrors({ currentPassword: 'Password is required for verification.' });
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
+
+  const validateStep2 = () => {
+    const err = {};
+    if (!newPassword.trim()) err.newPassword = 'New password is required.';
+    else if (newPassword.length < 8) err.newPassword = 'New password must be at least 8 characters.';
+    if (newPassword !== confirmPassword) err.confirmPassword = 'Passwords do not match.';
+    if (currentPassword && newPassword && currentPassword === newPassword) err.newPassword = 'New password must differ from current.';
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const handleVerificationOk = () => {
+    if (!validateStep1()) return;
+    setStep(2);
+    setErrors({});
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors({});
+    if (!validateStep2()) return;
+    setLoading(true);
+    try {
+      await authApi.changePassword({
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: confirmPassword,
+      });
+      staffToast.success('Password updated', 'Your password has been changed successfully.');
+      handleClose();
+    } catch (err) {
+      const parsed = parseApiError(err);
+      const errMap = {};
+      if (parsed.errors) {
+        if (parsed.errors.current_password) errMap.currentPassword = parsed.errors.current_password[0];
+        if (parsed.errors.password) errMap.newPassword = parsed.errors.password[0];
+      }
+      if (!errMap.currentPassword && !errMap.newPassword) {
+        errMap.submit = parsed.message;
+      }
+      setErrors(errMap);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputBase = 'w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';
+  const inputError = 'border-red-500 bg-red-50';
+  const inputNormal = 'border-gray-300';
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={step === 1 ? 'Account Verification' : 'Change Password'}
+      titleId={step === 1 ? 'account-verification-title' : 'change-password-title'}
+      maxWidth="max-w-md"
+    >
+      <div className="p-6">
+        {step === 1 && (
+          <>
+            <p className="text-gray-700 mb-4">Please enter your password for verification.</p>
+            <div className="mb-4">
+              <label htmlFor="verify-password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                id="verify-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className={errors.currentPassword ? `${inputBase} ${inputError}` : `${inputBase} ${inputNormal}`}
+                placeholder="Password"
+                autoComplete="current-password"
+                aria-invalid={!!errors.currentPassword}
+                autoFocus
+              />
+              {errors.currentPassword && <p className="mt-1 text-xs text-red-600">{errors.currentPassword}</p>}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleVerificationOk}
+                className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:outline-none focus:ring-2 focus:ring-tmcc/30"
+              >
+                OK
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
+                  New password
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={errors.newPassword ? `${inputBase} ${inputError}` : `${inputBase} ${inputNormal}`}
+                  autoComplete="new-password"
+                  aria-invalid={!!errors.newPassword}
+                  autoFocus
+                />
+                {errors.newPassword && <p className="mt-1 text-xs text-red-600">{errors.newPassword}</p>}
+              </div>
+              <div>
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm new password
+                </label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={errors.confirmPassword ? `${inputBase} ${inputError}` : `${inputBase} ${inputNormal}`}
+                  autoComplete="new-password"
+                  aria-invalid={!!errors.confirmPassword}
+                />
+                {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
+              </div>
+              {errors.submit && <p className="text-sm text-red-600" role="alert">{errors.submit}</p>}
+            </div>
+            <div className="flex gap-3 mt-6 justify-end">
+              <button
+                type="button"
+                onClick={() => { setStep(1); setErrors({}); setNewPassword(''); setConfirmPassword(''); }}
+                className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:outline-none focus:ring-2 focus:ring-tmcc/30 disabled:opacity-70"
+              >
+                {loading ? 'Updating...' : 'Update password'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+export default ChangePasswordModal;

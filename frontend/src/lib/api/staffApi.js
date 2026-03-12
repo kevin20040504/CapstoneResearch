@@ -15,8 +15,8 @@ export const staffApi = {
     return data;
   },
 
-  rejectRequest: async (id) => {
-    const { data } = await apiClient.patch(`/staff/requests/${id}/reject`);
+  rejectRequest: async (id, payload = {}) => {
+    const { data } = await apiClient.patch(`/staff/requests/${id}/reject`, payload);
     return data;
   },
 
@@ -45,6 +45,11 @@ export const staffApi = {
 
   getReportsSummary: async () => {
     const { data } = await apiClient.get('/staff/reports/summary');
+    return data;
+  },
+
+  getTransactionHistory: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/reports/transaction-history', { params });
     return data;
   },
 

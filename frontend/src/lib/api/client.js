@@ -9,7 +9,6 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true,
 });
 
 // Request interceptor: attach auth token
@@ -24,14 +23,34 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401, clear auth state
+
+function getApiErrorMessage(error) {
+  if (error.response) {
+    const { status, data } = error.response;
+    const msg = data?.message ?? data?.error ?? (typeof data === 'string' ? data : null);
+    if (msg) return `[${status}] ${msg}`;
+    return `Request failed with status ${status}`;
+  }
+  if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+    const base = apiClient.defaults.baseURL ?? 'API';
+    return `Cannot reach server (${base}). Check if backend is running and CORS is allowed.`;
+  }
+  return error.message || 'Request failed';
+}
+
+// Response interceptor: handle 401, then reject with clear error
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const message = getApiErrorMessage(error);
+    error.apiMessage = message;
+
     if (error.response?.status === 401) {
       clearStoredAuth();
       window.dispatchEvent(new Event('auth:logout'));
     }
+
+    console.error('[API Error]', message, error.response?.data ?? error);
     return Promise.reject(error);
   }
 );

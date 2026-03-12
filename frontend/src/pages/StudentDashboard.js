@@ -12,12 +12,24 @@ import {
   FiPrinter,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
+import { studentApi } from '../lib/api/studentApi';
+import CORModal from '../components/student/CORModal';
+import RequestRecordModal from '../components/student/RequestRecordModal';
+import SubjectsModal from '../components/student/SubjectsModal';
+import GradesModal from '../components/student/GradesModal';
+import CurriculumModal from '../components/student/CurriculumModal';
+import ViewCopyOfGradesModal from '../components/student/ViewCopyOfGradesModal';
+import ChangePasswordModal from '../components/student/ChangePasswordModal';
 
 const StudentDashboard = () => {
   const { logout, logoutMutation } = useAuth();
   const [currentTime, setCurrentTime] = useState('');
   const [currentDate, setCurrentDate] = useState('');
-  const [student, setStudent] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState(null);
+  const [modalOpen, setModalOpen] = useState({ cor: false, requestRecord: false, subjects: false, grades: false, curriculum: false, viewCopyOfGrades: false });
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -31,30 +43,33 @@ const StudentDashboard = () => {
   }, []);
 
   useEffect(() => {
-    setStudent({
-      id: 1,
-      student_id: 'TMCC-2025-001',
-      first_name: 'Juan',
-      last_name: 'Dela Cruz',
-      middle_initial: 'S',
-      email: 'juan.delacruz@tmcc.edu.ph',
-      course: 'BS Information Technology',
-      year_level: 2,
-      semester: 'SECOND SEMESTER',
-      academic_year: 'AY 2025-2026',
-      college: 'College of Informatics and Computing Sciences',
-      campus: 'Trece Martires City College - Main Campus',
-      status: 'ENROLLED',
-      profile_photo: '/logo.png',
-    });
+    setProfileLoading(true);
+    setProfileError(null);
+    studentApi.getProfile()
+      .then((data) => {
+        setProfile(data);
+      })
+      .catch(() => {
+        setProfileError('Failed to load profile.');
+        setProfile(null);
+      })
+      .finally(() => setProfileLoading(false));
   }, []);
 
   const handleSignOut = () => logout();
-  const handleChangePassword = () => {};
+  const handleChangePassword = () => setChangePasswordOpen(true);
 
-  if (!student) return <div className="sd-loading">Loading...</div>;
+  const student = profile?.student;
+  const academicYear = profile?.academic_year || '';
+  const semester = profile?.semester || '';
+  const institutionName = profile?.institution_name || 'Trece Martires City College';
+  const programName = student?.program?.name || student?.program?.code || '';
 
-  const fullName = `${student.last_name.toUpperCase()}, ${student.first_name.toUpperCase()} ${student.middle_initial}.`;
+  if (profileLoading && !profile) return <div className="sd-loading">Loading...</div>;
+
+  const fullName = student
+    ? `${(student.last_name || '').toUpperCase()}, ${(student.first_name || '').toUpperCase()}`
+    : '—';
 
   return (
     <div className="student-dashboard">
@@ -89,19 +104,24 @@ const StudentDashboard = () => {
         </div>
       </header>
 
+      {profileError && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
+          {profileError}
+        </div>
+      )}
       {/* ========== PROFILE HERO ========== */}
       <section className="sd-profile-hero">
         <div className="sd-profile-bg" aria-hidden="true" />
         <div className="sd-profile-inner">
-          <img src={student.profile_photo} alt="" className="sd-profile-photo" />
+          <img src="/logo.png" alt="" className="sd-profile-photo" onError={(e) => { e.target.style.display = 'none'; }} />
           <div className="sd-profile-info ">
           <div className="bg-white/60 px-5 w-fit" >
             <h2 className="sd-profile-name">{fullName}</h2>
             <ul className="sd-academic-list">
-              <li>{student.semester} {student.academic_year}</li>
-              <li>{student.college} - {student.campus}</li>
-              <li>{student.course} - {student.year_level === 1 ? 'FIRST' : student.year_level === 2 ? 'SECOND' : student.year_level === 3 ? 'THIRD' : 'FOURTH'} YEAR</li>
-              <li className="sd-status-enrolled !text-green-900">{student.status}</li>
+              <li>{semester} {academicYear}</li>
+              <li>{institutionName}</li>
+              {programName && <li>{programName}</li>}
+              <li className="sd-status-enrolled !text-green-900">ENROLLED</li>
             </ul>
           </div>
           </div>
@@ -137,20 +157,31 @@ const StudentDashboard = () => {
       {/* ========== ENROLLMENT SECTION ========== */}
       <section className="sd-content">
         <div className="sd-enrollment-section">
-          <h2 className="sd-section-title sd-title-red">Enrollment - {student.semester} {student.academic_year}</h2>
+          <h2 className="sd-section-title sd-title-red">Enrollment - {semester} {academicYear}</h2>
           <p className="sd-filter-hint">
             <FiInfo className="sd-info-icon" />
-            Click &quot;Filter Option..&quot; button to change the default schoolyear / semester
+            Use the links below to view your COR, subjects, grades, curriculum, or request academic records.
           </p>
-          <button type="button" className="sd-filter-btn">Filter Option..</button>
 
           <div className="sd-quick-links">
-            <Link to="/request" className="sd-quick-link"><span className="sd-quick-icon"><FiFileText /></span> Certificate of Registration (COR)</Link>
-            <Link to="/request" className="sd-quick-link"><span className="sd-quick-icon"><FiFileText /></span> Request Academic Record (Transcript, Certificate, etc.)</Link>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiLayers /></span> Subjects</button>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiClipboard /></span> Grades</button>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiBook /></span> Curriculum</button>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiPrinter /></span> View Copy of Grades</button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, cor: true }))}>
+              <span className="sd-quick-icon"><FiFileText /></span> Certificate of Registration (COR)
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, requestRecord: true }))}>
+              <span className="sd-quick-icon"><FiFileText /></span> Request Academic Record (Transcript, Certificate, etc.)
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, subjects: true }))}>
+              <span className="sd-quick-icon"><FiLayers /></span> Subjects
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, grades: true }))}>
+              <span className="sd-quick-icon"><FiClipboard /></span> Grades
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, curriculum: true }))}>
+              <span className="sd-quick-icon"><FiBook /></span> Curriculum
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, viewCopyOfGrades: true }))}>
+              <span className="sd-quick-icon"><FiPrinter /></span> View Copy of Grades
+            </button>
           </div>
         </div>
 
@@ -183,6 +214,18 @@ const StudentDashboard = () => {
           </div>
         </div>
       </section>
+
+      <CORModal isOpen={modalOpen.cor} onClose={() => setModalOpen((m) => ({ ...m, cor: false }))} />
+      <RequestRecordModal
+        isOpen={modalOpen.requestRecord}
+        onClose={() => setModalOpen((m) => ({ ...m, requestRecord: false }))}
+        onSuccess={() => setModalOpen((m) => ({ ...m, requestRecord: false }))}
+      />
+      <SubjectsModal isOpen={modalOpen.subjects} onClose={() => setModalOpen((m) => ({ ...m, subjects: false }))} />
+      <GradesModal isOpen={modalOpen.grades} onClose={() => setModalOpen((m) => ({ ...m, grades: false }))} />
+      <CurriculumModal isOpen={modalOpen.curriculum} onClose={() => setModalOpen((m) => ({ ...m, curriculum: false }))} />
+      <ViewCopyOfGradesModal isOpen={modalOpen.viewCopyOfGrades} onClose={() => setModalOpen((m) => ({ ...m, viewCopyOfGrades: false }))} />
+      <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
       </div>
     </div>
   );

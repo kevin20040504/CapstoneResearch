@@ -15,13 +15,7 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
-
-const MOCK_KPI = {
-  pendingRequests: 3,
-  processedToday: 12,
-  studentsCount: 982,
-  documentsReleased: 8,
-};
+import { dashboardApi } from '../lib/api/dashboardApi';
 
 const StaffLayout = () => {
   const { user, role, logout, logoutMutation } = useAuth();
@@ -30,7 +24,24 @@ const StaffLayout = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [kpi] = useState(MOCK_KPI);
+  const [kpi, setKpi] = useState({
+    pendingRequests: 0,
+    processedToday: 0,
+    studentsCount: 0,
+    documentsReleased: 0,
+  });
+
+  useEffect(() => {
+    dashboardApi.getDashboard().then((res) => {
+      const k = res?.kpis || {};
+      setKpi({
+        pendingRequests: k.pending_requests ?? 0,
+        processedToday: k.processed_today ?? 0,
+        studentsCount: k.students_count ?? 0,
+        documentsReleased: k.documents_released_today ?? 0,
+      });
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const updateDateTime = () => {

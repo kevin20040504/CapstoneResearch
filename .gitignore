@@ -10,3 +10,5 @@ workflow.txt
 /docs/
 /docs
 /docs*
+/node_modules
+

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
+import { authApi } from '../../lib/api/authApi';
+import { parseApiError } from '../../lib/api/errors';
 import { staffToast } from '../../lib/notifications';
 
 /**
- * Per thesis: same auth context; modal or dedicated route.
  */
 const ChangePasswordModal = ({ isOpen, onClose }) => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -28,14 +29,31 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     setErrors({});
     if (!validate()) return;
     setLoading(true);
-    // UI only — simulate success
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    onClose();
-    staffToast.success('Password updated', 'Your password has been changed successfully.');
+    try {
+      await authApi.changePassword({
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: confirmPassword,
+      });
+      staffToast.success('Password updated', 'Your password has been changed successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      onClose();
+    } catch (err) {
+      const parsed = parseApiError(err);
+      const errMap = {};
+      if (parsed.errors) {
+        if (parsed.errors.current_password) errMap.currentPassword = parsed.errors.current_password[0];
+        if (parsed.errors.password) errMap.newPassword = parsed.errors.password[0];
+      }
+      if (!errMap.currentPassword && !errMap.newPassword) {
+        errMap.submit = parsed.message;
+      }
+      setErrors(errMap);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputBase = 'w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';
@@ -91,6 +109,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
             />
             {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
           </div>
+          {errors.submit && <p className="text-sm text-red-600" role="alert">{errors.submit}</p>}
         </div>
         <div className="flex gap-3 mt-6 justify-end">
           <button

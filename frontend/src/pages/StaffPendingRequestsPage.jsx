@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FiCheck, FiX, FiSearch, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { staffToast } from '../lib/notifications';
+import { staffApi } from '../lib/api/staffApi';
+import { parseApiError } from '../lib/api/errors';
 
 const ENTRIES_OPTIONS = [5, 10, 25, 50];
 
@@ -29,14 +31,28 @@ const StaffPendingRequestsPage = () => {
   const [pendingPage, setPendingPage] = useState(1);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+
+  const fetchPending = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const res = await staffApi.getPendingRequests({ per_page: 100 });
+      const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setPendingRequests(list);
+    } catch (err) {
+      const parsed = parseApiError(err);
+      setLoadError(parsed.message || 'Failed to load pending requests.');
+      setPendingRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setPendingRequests([
-      { id: 1, student_id: 1, student_name: 'Juan Dela Cruz', record_type: 'transcript', purpose: 'Job application', requested_at: '2026-02-28', status: 'pending' },
-      { id: 2, student_id: 2, student_name: 'Maria Santos', record_type: 'certificate', purpose: 'Scholarship', requested_at: '2026-02-27', status: 'pending' },
-      { id: 3, student_id: 3, student_name: 'Pedro Reyes', record_type: 'diploma', purpose: 'Professional license', requested_at: '2026-02-26', status: 'pending' },
-    ]);
-  }, []);
+    fetchPending();
+  }, [fetchPending]);
 
   const handleReject = (id) => {
     setConfirmAction({ type: 'reject', id, student_name: pendingRequests.find((r) => r.id === id)?.student_name });
@@ -49,15 +65,22 @@ const StaffPendingRequestsPage = () => {
   const onConfirmAction = async () => {
     if (!confirmAction) return;
     setConfirmLoading(true);
-    await new Promise((r) => setTimeout(r, 400));
     const { type, id, student_name } = confirmAction;
-    setPendingRequests((prev) => prev.filter((r) => r.id !== id));
-    setConfirmAction(null);
-    setConfirmLoading(false);
-    if (type === 'approve') {
-      staffToast.success('Request approved', `${student_name}'s record request has been approved.`);
-    } else {
-      staffToast.warning('Request rejected', `${student_name}'s record request has been rejected.`);
+    try {
+      if (type === 'approve') {
+        await staffApi.approveRequest(id);
+        staffToast.success('Request approved', `${student_name}'s record request has been approved.`);
+      } else {
+        await staffApi.rejectRequest(id);
+        staffToast.warning('Request rejected', `${student_name}'s record request has been rejected.`);
+      }
+      setPendingRequests((prev) => prev.filter((r) => r.id !== id));
+      setConfirmAction(null);
+    } catch (err) {
+      const parsed = parseApiError(err);
+      staffToast.error(type === 'approve' ? 'Approve failed' : 'Reject failed', parsed.message || 'Request failed.');
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -112,6 +135,11 @@ const StaffPendingRequestsPage = () => {
         <h2 className="m-0 text-2xl font-bold text-gray-800">Pending Requests</h2>
         <p className="mt-1 m-0 text-gray-600 text-sm">Review and approve or reject record requests from students.</p>
       </section>
+      {loadError && (
+        <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
+          {loadError}
+        </div>
+      )}
       <section className="bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h3 className="mt-0 mb-4 text-lg font-semibold text-gray-800">Pending Record Requests</h3>
@@ -165,7 +193,9 @@ const StaffPendingRequestsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {pendingPaginated.length > 0 ? (
+              {loading ? (
+                <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500">Loading pending requests...</td></tr>
+              ) : pendingPaginated.length > 0 ? (
                 pendingPaginated.map((req) => (
                   <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
                     <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
