@@ -47,7 +47,7 @@ class DashboardController extends Controller
             ->whereDate('released_at', today())
             ->count();
 
-        $recentActivity = RecordRequest::with('student:id,student_id,first_name,last_name,student_number')
+        $recentActivity = RecordRequest::with('student:student_id,first_name,last_name,student_number')
             ->orderByDesc('updated_at')
             ->limit(5)
             ->get()

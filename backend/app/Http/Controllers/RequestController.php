@@ -34,7 +34,7 @@ class RequestController extends Controller
             return $err;
         }
 
-        $query = RecordRequest::with('student:id,student_id,student_number,first_name,last_name,email')
+        $query = RecordRequest::with('student:student_id,student_number,first_name,last_name,email')
             ->where('status', RecordRequest::STATUS_PENDING);
 
         if ($search = $request->input('search')) {
@@ -155,8 +155,53 @@ class RequestController extends Controller
             return $err;
         }
 
-        $query = RecordRequest::with('student:id,student_id,student_number,first_name,last_name,email')
+        $query = RecordRequest::with('student:student_id,student_number,first_name,last_name,email')
             ->where('status', RecordRequest::STATUS_APPROVED);
+
+        $sortKey = $request->input('sort', 'processed_at');
+        $sortDir = $request->input('dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sortKey, $sortDir);
+
+        $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
+        $items = $query->paginate($perPage);
+
+        $items->getCollection()->transform(function (RecordRequest $req) {
+            $s = $req->student;
+            $req->setAttribute('student_name', $s ? trim($s->first_name . ' ' . $s->last_name) : null);
+            return $req;
+        });
+
+        return response()->json($items);
+    }
+
+    /**
+     * List rejected record requests (staff + admin).
+     */
+    public function indexRejected(Request $request): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+
+        $query = RecordRequest::with('student:student_id,student_number,first_name,last_name,email')
+            ->where('status', RecordRequest::STATUS_REJECTED);
+
+        if ($search = $request->input('search')) {
+            $search = preg_replace('/\s+/', ' ', trim($search));
+            $query->whereHas('student', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('student_number', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($recordType = $request->input('record_type')) {
+            $query->where('record_type', $recordType);
+        }
 
         $sortKey = $request->input('sort', 'processed_at');
         $sortDir = $request->input('dir', 'desc') === 'asc' ? 'asc' : 'desc';

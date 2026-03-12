@@ -51,6 +51,7 @@ Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(
     Route::patch('/requests/{id}/approve', [RequestController::class, 'approve']);
     Route::patch('/requests/{id}/reject', [RequestController::class, 'reject']);
     Route::get('/approved-release', [RequestController::class, 'indexApproved']);
+    Route::get('/rejected-requests', [RequestController::class, 'indexRejected']);
     Route::put('/requests/{id}/release', [RequestController::class, 'release']);
     Route::post('/transactions', [RequestController::class, 'storeTransaction']);
 });

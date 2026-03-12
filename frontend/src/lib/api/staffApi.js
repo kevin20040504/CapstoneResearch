@@ -5,8 +5,18 @@ import { apiClient } from './client';
  * All endpoints require auth:sanctum and staff/admin role on backend.
  */
 export const staffApi = {
-  getPendingRequests: async () => {
-    const { data } = await apiClient.get('/staff/pending-requests');
+  getPendingRequests: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/pending-requests', { params });
+    return data;
+  },
+
+  getApprovedRequests: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/approved-release', { params });
+    return data;
+  },
+
+  getRejectedRequests: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/rejected-requests', { params });
     return data;
   },
 

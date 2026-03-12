@@ -57,7 +57,7 @@ class ReportController extends Controller
             return $err;
         }
 
-        $query = RecordRequest::with('student:id,student_id,student_number,first_name,last_name')
+        $query = RecordRequest::with('student:student_id,student_number,first_name,last_name')
             ->orderByDesc('requested_at');
 
         if ($dateFrom = $request->input('date_from')) {
@@ -91,7 +91,7 @@ class ReportController extends Controller
             return $err;
         }
 
-        $query = RecordRequest::with('student:id,student_id,student_number,first_name,last_name,email')
+        $query = RecordRequest::with('student:student_id,student_number,first_name,last_name,email')
             ->orderByDesc('requested_at');
 
         if ($dateFrom = $request->input('date_from')) {

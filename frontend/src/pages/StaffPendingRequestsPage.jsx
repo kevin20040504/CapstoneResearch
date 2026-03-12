@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FiCheck, FiX, FiSearch, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { FiCheck, FiX, FiSearch, FiChevronUp, FiChevronDown, FiInbox, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { staffToast } from '../lib/notifications';
 import { staffApi } from '../lib/api/staffApi';
 import { parseApiError } from '../lib/api/errors';
 
 const ENTRIES_OPTIONS = [5, 10, 25, 50];
+const TABS = [
+  { id: 'requests', label: 'Requests', icon: FiInbox },
+  { id: 'approved', label: 'Approved', icon: FiCheckCircle },
+  { id: 'rejected', label: 'Rejected', icon: FiXCircle },
+];
 
 const sortData = (data, key, dir) => {
   if (!data.length) return data;
@@ -22,17 +27,28 @@ const sortData = (data, key, dir) => {
 };
 
 const StaffPendingRequestsPage = () => {
+  const [activeTab, setActiveTab] = useState('requests');
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [approvedRequests, setApprovedRequests] = useState([]);
+  const [rejectedRequests, setRejectedRequests] = useState([]);
   const [pendingSearch, setPendingSearch] = useState('');
   const [pendingFilterType, setPendingFilterType] = useState('');
   const [pendingSortKey, setPendingSortKey] = useState('requested_at');
   const [pendingSortDir, setPendingSortDir] = useState('desc');
+  const [approvedSortKey, setApprovedSortKey] = useState('processed_at');
+  const [approvedSortDir, setApprovedSortDir] = useState('desc');
+  const [rejectedSortKey, setRejectedSortKey] = useState('processed_at');
+  const [rejectedSortDir, setRejectedSortDir] = useState('desc');
   const [pendingEntries, setPendingEntries] = useState(10);
   const [pendingPage, setPendingPage] = useState(1);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [approvedLoadError, setApprovedLoadError] = useState(null);
+  const [rejectedLoadError, setRejectedLoadError] = useState(null);
+  const [approvedLoading, setApprovedLoading] = useState(false);
+  const [rejectedLoading, setRejectedLoading] = useState(false);
 
   const fetchPending = useCallback(async () => {
     setLoading(true);
@@ -50,9 +66,49 @@ const StaffPendingRequestsPage = () => {
     }
   }, []);
 
+  const fetchApproved = useCallback(async () => {
+    setApprovedLoading(true);
+    setApprovedLoadError(null);
+    try {
+      const res = await staffApi.getApprovedRequests({ per_page: 100 });
+      const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setApprovedRequests(list);
+    } catch (err) {
+      const parsed = parseApiError(err);
+      setApprovedLoadError(parsed.message || 'Failed to load approved requests.');
+      setApprovedRequests([]);
+    } finally {
+      setApprovedLoading(false);
+    }
+  }, []);
+
+  const fetchRejected = useCallback(async () => {
+    setRejectedLoading(true);
+    setRejectedLoadError(null);
+    try {
+      const res = await staffApi.getRejectedRequests({ per_page: 100 });
+      const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setRejectedRequests(list);
+    } catch (err) {
+      const parsed = parseApiError(err);
+      setRejectedLoadError(parsed.message || 'Failed to load rejected requests.');
+      setRejectedRequests([]);
+    } finally {
+      setRejectedLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchPending();
   }, [fetchPending]);
+
+  useEffect(() => {
+    if (activeTab === 'approved') fetchApproved();
+  }, [activeTab, fetchApproved]);
+
+  useEffect(() => {
+    if (activeTab === 'rejected') fetchRejected();
+  }, [activeTab, fetchRejected]);
 
   const handleReject = (id) => {
     setConfirmAction({ type: 'reject', id, student_name: pendingRequests.find((r) => r.id === id)?.student_name });
@@ -84,24 +140,29 @@ const StaffPendingRequestsPage = () => {
     }
   };
 
-  const toggleSort = (key) => {
+  const togglePendingSort = (key) => {
     if (key === pendingSortKey) setPendingSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else {
-      setPendingSortKey(key);
-      setPendingSortDir('asc');
-    }
+    else { setPendingSortKey(key); setPendingSortDir('desc'); }
+  };
+  const toggleApprovedSort = (key) => {
+    if (key === approvedSortKey) setApprovedSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setApprovedSortKey(key); setApprovedSortDir('desc'); }
+  };
+  const toggleRejectedSort = (key) => {
+    if (key === rejectedSortKey) setRejectedSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setRejectedSortKey(key); setRejectedSortDir('desc'); }
   };
 
-  const SortableTh = ({ label, sortKey }) => (
+  const SortableTh = ({ label, sortKey, currentSortKey, currentSortDir, onToggle }) => (
     <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">
       <button
         type="button"
         className="flex items-center gap-1 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-tmcc/30 rounded"
-        onClick={() => toggleSort(sortKey)}
+        onClick={() => onToggle(sortKey)}
       >
         {label}
-        {pendingSortKey === sortKey ? (
-          pendingSortDir === 'asc' ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />
+        {currentSortKey === sortKey ? (
+          currentSortDir === 'asc' ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />
         ) : (
           <span className="w-4 h-4 inline-block opacity-40"><FiChevronUp className="w-3 h-3" /></span>
         )}
@@ -120,6 +181,16 @@ const StaffPendingRequestsPage = () => {
     return sortData(list, pendingSortKey, pendingSortDir);
   }, [pendingRequests, pendingSearch, pendingFilterType, pendingSortKey, pendingSortDir]);
 
+  const approvedSorted = useMemo(
+    () => sortData(approvedRequests, approvedSortKey, approvedSortDir),
+    [approvedRequests, approvedSortKey, approvedSortDir]
+  );
+
+  const rejectedSorted = useMemo(
+    () => sortData(rejectedRequests, rejectedSortKey, rejectedSortDir),
+    [rejectedRequests, rejectedSortKey, rejectedSortDir]
+  );
+
   const pendingPaginated = useMemo(() => {
     const start = (pendingPage - 1) * pendingEntries;
     return pendingFiltered.slice(start, start + pendingEntries);
@@ -129,97 +200,216 @@ const StaffPendingRequestsPage = () => {
 
   const isApprove = confirmAction?.type === 'approve';
 
+  const currentError = activeTab === 'requests' ? loadError : activeTab === 'approved' ? approvedLoadError : rejectedLoadError;
+
   return (
     <>
       <section className="mb-6">
-        <h2 className="m-0 text-2xl font-bold text-gray-800">Pending Requests</h2>
-        <p className="mt-1 m-0 text-gray-600 text-sm">Review and approve or reject record requests from students.</p>
+        <h2 className="m-0 text-2xl font-bold text-gray-800">Record Requests</h2>
+        <p className="mt-1 m-0 text-gray-600 text-sm">Review and approve or reject record requests. View approved and rejected in the tabs below.</p>
       </section>
-      {loadError && (
+
+      <div className="flex gap-1 mb-4 border-b border-gray-200">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === tab.id
+                  ? 'border-tmcc text-tmcc'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {currentError && (
         <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
-          {loadError}
+          {currentError}
         </div>
       )}
+
       <section className="bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <h3 className="mt-0 mb-4 text-lg font-semibold text-gray-800">Pending Record Requests</h3>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="search"
-                placeholder="Search..."
-                value={pendingSearch}
-                onChange={(e) => { setPendingSearch(e.target.value); setPendingPage(1); }}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
-                aria-label="Search pending requests"
-              />
+        {activeTab === 'requests' && (
+          <>
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="mt-0 mb-4 text-lg font-semibold text-gray-800">Pending Record Requests</h3>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="search"
+                    placeholder="Search..."
+                    value={pendingSearch}
+                    onChange={(e) => { setPendingSearch(e.target.value); setPendingPage(1); }}
+                    className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
+                    aria-label="Search pending requests"
+                  />
+                </div>
+                <select
+                  value={pendingFilterType}
+                  onChange={(e) => { setPendingFilterType(e.target.value); setPendingPage(1); }}
+                  className="py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
+                  aria-label="Filter by record type"
+                >
+                  <option value="">All record types</option>
+                  {pendingRecordTypes.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Show</span>
+                  <select
+                    value={pendingEntries}
+                    onChange={(e) => { setPendingEntries(Number(e.target.value)); setPendingPage(1); }}
+                    className="py-1.5 px-2 border border-gray-300 rounded text-sm"
+                  >
+                    {ENTRIES_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                  <span>entries</span>
+                </div>
+              </div>
             </div>
-            <select
-              value={pendingFilterType}
-              onChange={(e) => { setPendingFilterType(e.target.value); setPendingPage(1); }}
-              className="py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
-              aria-label="Filter by record type"
-            >
-              <option value="">All record types</option>
-              {pendingRecordTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>Show</span>
-              <select
-                value={pendingEntries}
-                onChange={(e) => { setPendingEntries(Number(e.target.value)); setPendingPage(1); }}
-                className="py-1.5 px-2 border border-gray-300 rounded text-sm"
-              >
-                {ENTRIES_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-              <span>entries</span>
-            </div>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                <SortableTh label="Student Name" sortKey="student_name" />
-                <SortableTh label="Record Type" sortKey="record_type" />
-                <SortableTh label="Purpose" sortKey="purpose" />
-                <SortableTh label="Requested" sortKey="requested_at" />
-                <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500">Loading pending requests...</td></tr>
-              ) : pendingPaginated.length > 0 ? (
-                pendingPaginated.map((req) => (
-                  <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
-                    <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
-                    <td className="py-3 px-4 text-gray-700">{req.record_type}</td>
-                    <td className="py-3 px-4 text-gray-700">{req.purpose}</td>
-                    <td className="py-3 px-4 text-gray-700">{req.requested_at}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2 flex-wrap">
-                        <button type="button" className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30" onClick={() => handleApprove(req.id)}><FiCheck /> Approve</button>
-                        <button type="button" className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-staff-red text-white hover:opacity-90 focus:ring-2 focus:ring-red-500/30" onClick={() => handleReject(req.id)}><FiX /> Reject</button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr>
+                    <SortableTh label="Student Name" sortKey="student_name" currentSortKey={pendingSortKey} currentSortDir={pendingSortDir} onToggle={togglePendingSort} />
+                    <SortableTh label="Record Type" sortKey="record_type" currentSortKey={pendingSortKey} currentSortDir={pendingSortDir} onToggle={togglePendingSort} />
+                    <SortableTh label="Purpose" sortKey="purpose" currentSortKey={pendingSortKey} currentSortDir={pendingSortDir} onToggle={togglePendingSort} />
+                    <SortableTh label="Requested" sortKey="requested_at" currentSortKey={pendingSortKey} currentSortDir={pendingSortDir} onToggle={togglePendingSort} />
+                    <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Actions</th>
                   </tr>
-                ))
-              ) : (
-                <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500 italic">No pending requests.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {pendingFiltered.length > 0 && (
-          <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
-            Showing {((pendingPage - 1) * pendingEntries) + 1} to {Math.min(pendingPage * pendingEntries, pendingFiltered.length)} of {pendingFiltered.length} entries
-          </div>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500">Loading pending requests...</td></tr>
+                  ) : pendingPaginated.length > 0 ? (
+                    pendingPaginated.map((req) => (
+                      <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                        <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.record_type}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.purpose}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.requested_at}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2 flex-wrap">
+                            <button type="button" className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30" onClick={() => handleApprove(req.id)}><FiCheck /> Approve</button>
+                            <button type="button" className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-staff-red text-white hover:opacity-90 focus:ring-2 focus:ring-red-500/30" onClick={() => handleReject(req.id)}><FiX /> Reject</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500 italic">No pending requests.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {pendingFiltered.length > 0 && (
+              <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
+                Showing {((pendingPage - 1) * pendingEntries) + 1} to {Math.min(pendingPage * pendingEntries, pendingFiltered.length)} of {pendingFiltered.length} entries
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'approved' && (
+          <>
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="mt-0 mb-4 text-lg font-semibold text-gray-800">Approved Requests</h3>
+              <p className="m-0 text-sm text-gray-600">Click column headers to sort ascending or descending.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr>
+                    <SortableTh label="Student Name" sortKey="student_name" currentSortKey={approvedSortKey} currentSortDir={approvedSortDir} onToggle={toggleApprovedSort} />
+                    <SortableTh label="Record Type" sortKey="record_type" currentSortKey={approvedSortKey} currentSortDir={approvedSortDir} onToggle={toggleApprovedSort} />
+                    <SortableTh label="Purpose" sortKey="purpose" currentSortKey={approvedSortKey} currentSortDir={approvedSortDir} onToggle={toggleApprovedSort} />
+                    <SortableTh label="Requested" sortKey="requested_at" currentSortKey={approvedSortKey} currentSortDir={approvedSortDir} onToggle={toggleApprovedSort} />
+                    <SortableTh label="Processed" sortKey="processed_at" currentSortKey={approvedSortKey} currentSortDir={approvedSortDir} onToggle={toggleApprovedSort} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvedLoading ? (
+                    <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500">Loading approved requests...</td></tr>
+                  ) : approvedSorted.length === 0 ? (
+                    <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500 italic">No approved requests.</td></tr>
+                  ) : (
+                    approvedSorted.map((req) => (
+                      <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                        <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.record_type}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.purpose}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.requested_at}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.processed_at ?? '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {approvedSorted.length > 0 && (
+              <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
+                Showing {approvedSorted.length} approved request{approvedSorted.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'rejected' && (
+          <>
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="mt-0 mb-4 text-lg font-semibold text-gray-800">Rejected Requests</h3>
+              <p className="m-0 text-sm text-gray-600">Click column headers to sort ascending or descending.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr>
+                    <SortableTh label="Student Name" sortKey="student_name" currentSortKey={rejectedSortKey} currentSortDir={rejectedSortDir} onToggle={toggleRejectedSort} />
+                    <SortableTh label="Record Type" sortKey="record_type" currentSortKey={rejectedSortKey} currentSortDir={rejectedSortDir} onToggle={toggleRejectedSort} />
+                    <SortableTh label="Purpose" sortKey="purpose" currentSortKey={rejectedSortKey} currentSortDir={rejectedSortDir} onToggle={toggleRejectedSort} />
+                    <SortableTh label="Requested" sortKey="requested_at" currentSortKey={rejectedSortKey} currentSortDir={rejectedSortDir} onToggle={toggleRejectedSort} />
+                    <SortableTh label="Processed" sortKey="processed_at" currentSortKey={rejectedSortKey} currentSortDir={rejectedSortDir} onToggle={toggleRejectedSort} />
+                    <SortableTh label="Reason" sortKey="rejection_reason" currentSortKey={rejectedSortKey} currentSortDir={rejectedSortDir} onToggle={toggleRejectedSort} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rejectedLoading ? (
+                    <tr><td colSpan={6} className="py-8 px-4 text-center text-gray-500">Loading rejected requests...</td></tr>
+                  ) : rejectedSorted.length === 0 ? (
+                    <tr><td colSpan={6} className="py-8 px-4 text-center text-gray-500 italic">No rejected requests.</td></tr>
+                  ) : (
+                    rejectedSorted.map((req) => (
+                      <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                        <td className="py-3 px-4 text-gray-800">{req.student_name}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.record_type}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.purpose}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.requested_at}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.processed_at ?? '—'}</td>
+                        <td className="py-3 px-4 text-gray-700">{req.rejection_reason ?? '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {rejectedSorted.length > 0 && (
+              <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
+                Showing {rejectedSorted.length} rejected request{rejectedSorted.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </>
         )}
       </section>
 
