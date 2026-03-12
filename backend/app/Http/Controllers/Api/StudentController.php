@@ -30,7 +30,7 @@ class StudentController extends Controller
             return $err;
         }
 
-        $query = Student::query()->with('user:id,name,username,email');
+        $query = Student::query()->with(['user:id,name,username,email', 'program:id,code,name']);
 
         if ($search = $request->input('search')) {
             $search = preg_replace('/\s+/', ' ', trim($search));
@@ -115,7 +115,7 @@ class StudentController extends Controller
             return response()->json(['message' => 'Forbidden. Staff or Admin only.'], 403);
         }
 
-        $student = Student::find($id);
+        $student = Student::with('program')->find($id);
         if (! $student) {
             return response()->json(['message' => 'Student not found.'], 404);
         }

@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\Student\RecordRequestController;
+use App\Http\Controllers\Student\StudentProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -78,6 +79,15 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 // ---- Admin only: Reports export ----
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/reports/export', [ReportController::class, 'export']);
+});
+
+// ---- Student: Profile, COR, subjects, grades, curriculum ----
+Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(function () {
+    Route::get('/profile', [StudentProfileController::class, 'profile']);
+    Route::get('/cor', [StudentProfileController::class, 'cor']);
+    Route::get('/subjects', [StudentProfileController::class, 'subjects']);
+    Route::get('/grades', [StudentProfileController::class, 'grades']);
+    Route::get('/curriculum', [StudentProfileController::class, 'curriculum']);
 });
 
 // ---- Student: Own record requests ----
