@@ -27,4 +27,16 @@ export const authApi = {
     const { data } = await apiClient.get('/user');
     return data;
   },
+
+  /**
+   * Change password (requires auth). Sends current_password, new password and confirmation.
+   */
+  changePassword: async ({ current_password, password, password_confirmation }) => {
+    const { data } = await apiClient.post('/auth/change-password', {
+      current_password,
+      password,
+      password_confirmation,
+    });
+    return data;
+  },
 };

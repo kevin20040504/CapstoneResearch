@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   FiInbox,
@@ -15,13 +15,7 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
-
-const MOCK_KPI = {
-  pendingRequests: 3,
-  processedToday: 12,
-  studentsCount: 982,
-  documentsReleased: 8,
-};
+import { dashboardApi } from '../lib/api/dashboardApi';
 
 const StaffLayout = () => {
   const { user, role, logout, logoutMutation } = useAuth();
@@ -30,7 +24,34 @@ const StaffLayout = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [kpi] = useState(MOCK_KPI);
+  const [kpi, setKpi] = useState({
+    pendingRequests: 0,
+    processedToday: 0,
+    studentsCount: 0,
+    documentsReleased: 0,
+  });
+
+  const fetchKpis = useCallback(() => {
+    dashboardApi.getDashboard().then((res) => {
+      const k = res?.kpis || {};
+      setKpi({
+        pendingRequests: k.pending_requests ?? 0,
+        processedToday: k.processed_today ?? 0,
+        studentsCount: k.students_count ?? 0,
+        documentsReleased: k.documents_released_today ?? 0,
+      });
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchKpis();
+  }, [location.pathname, fetchKpis]);
+
+  useEffect(() => {
+    const onRefresh = () => fetchKpis();
+    window.addEventListener('staff:dashboard-refresh', onRefresh);
+    return () => window.removeEventListener('staff:dashboard-refresh', onRefresh);
+  }, [fetchKpis]);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -108,7 +129,14 @@ const StaffLayout = () => {
                 aria-current={isActive ? 'page' : undefined}
               >
                 <Icon className="w-5 h-5 shrink-0" aria-hidden />
-                <span className="flex-1">{label}</span>
+                <span className="flex-1 flex items-center gap-2">
+                  <span>{label}</span>
+                  {id === 'requests' && kpi.pendingRequests > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full bg-white text-[#1ac76a] text-xs font-semibold">
+                      {kpi.pendingRequests}
+                    </span>
+                  )}
+                </span>
                 <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
               </Link>
             );
@@ -164,6 +192,12 @@ const StaffLayout = () => {
             <span className="text-sm text-gray-500 ml-1">Active S.Y.</span>
           </div>
           <div className="flex items-center gap-4">
+            {kpi.pendingRequests > 0 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+                <FiInbox className="w-3 h-3" />
+                <span>Pending: {kpi.pendingRequests}</span>
+              </span>
+            )}
             <span className="text-sm font-medium text-gray-700">{staffName}</span>
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
               <FiUser className="w-4 h-4 text-gray-600" />

@@ -1,9 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import {
-  FiKey,
-  FiLogOut,
-  FiAlertTriangle,
   FiInfo,
   FiFileText,
   FiLayers,
@@ -11,146 +7,55 @@ import {
   FiBook,
   FiPrinter,
 } from 'react-icons/fi';
-import { useAuth } from '../contexts/AuthContext';
+import CORModal from '../components/student/CORModal';
+import RequestRecordModal from '../components/student/RequestRecordModal';
+import SubjectsModal from '../components/student/SubjectsModal';
+import GradesModal from '../components/student/GradesModal';
+import CurriculumModal from '../components/student/CurriculumModal';
+import ViewCopyOfGradesModal from '../components/student/ViewCopyOfGradesModal';
+import { studentApi } from '../lib/api/studentApi';
 
 const StudentDashboard = () => {
-  const { logout, logoutMutation } = useAuth();
-  const [currentTime, setCurrentTime] = useState('');
-  const [currentDate, setCurrentDate] = useState('');
-  const [student, setStudent] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [modalOpen, setModalOpen] = useState({ cor: false, requestRecord: false, subjects: false, grades: false, curriculum: false, viewCopyOfGrades: false });
 
-  useEffect(() => {
-    const updateDateTime = () => {
-      const now = new Date();
-      setCurrentDate(now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
-      setCurrentTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
-    };
-    updateDateTime();
-    const interval = setInterval(updateDateTime, 1000);
-    return () => clearInterval(interval);
+  React.useEffect(() => {
+    studentApi.getProfile().then(setProfile).catch(() => setProfile(null));
   }, []);
 
-  useEffect(() => {
-    setStudent({
-      id: 1,
-      student_id: 'TMCC-2025-001',
-      first_name: 'Juan',
-      last_name: 'Dela Cruz',
-      middle_initial: 'S',
-      email: 'juan.delacruz@tmcc.edu.ph',
-      course: 'BS Information Technology',
-      year_level: 2,
-      semester: 'SECOND SEMESTER',
-      academic_year: 'AY 2025-2026',
-      college: 'College of Informatics and Computing Sciences',
-      campus: 'Trece Martires City College - Main Campus',
-      status: 'ENROLLED',
-      profile_photo: '/logo.png',
-    });
-  }, []);
-
-  const handleSignOut = () => logout();
-  const handleChangePassword = () => {};
-
-  if (!student) return <div className="sd-loading">Loading...</div>;
-
-  const fullName = `${student.last_name.toUpperCase()}, ${student.first_name.toUpperCase()} ${student.middle_initial}.`;
+  const academicYear = profile?.academic_year || '';
+  const semester = profile?.semester || '';
 
   return (
-    <div className="student-dashboard">
-      <div className="sd-page-container">
-      {/* ========== HEADER ========== */}
-      <header className="sd-header">
-        <div className="sd-header-inner">
-          <div className="sd-brand">
-            <img src="/logo.png" alt="TMCC" className="sd-logo" onError={(e) => { e.target.style.display = 'none'; }} />
-            <h1 className="sd-college-name">Trece Martires City College</h1>
-          </div>
-          <div className="sd-header-right">
-            <div className="sd-datetime">
-              <span className="sd-date">{currentDate}</span>
-              <span className="sd-time">{currentTime}</span>
-            </div>
-            <button type="button" className="sd-link-btn" onClick={handleChangePassword} aria-label="Change Password">
-              <FiKey className="sd-icon" />
-              Change Password
-            </button>
-            <button
-              type="button"
-              className="sd-link-btn sd-signout"
-              onClick={handleSignOut}
-              disabled={logoutMutation.isPending}
-              aria-label="Sign out"
-            >
-              <FiLogOut className="sd-icon" />
-              {logoutMutation.isPending ? 'Signing out...' : 'Sign-out'}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* ========== PROFILE HERO ========== */}
-      <section className="sd-profile-hero">
-        <div className="sd-profile-bg" aria-hidden="true" />
-        <div className="sd-profile-inner">
-          <img src={student.profile_photo} alt="" className="sd-profile-photo" />
-          <div className="sd-profile-info ">
-          <div className="bg-white/60 px-5 w-fit" >
-            <h2 className="sd-profile-name">{fullName}</h2>
-            <ul className="sd-academic-list">
-              <li>{student.semester} {student.academic_year}</li>
-              <li>{student.college} - {student.campus}</li>
-              <li>{student.course} - {student.year_level === 1 ? 'FIRST' : student.year_level === 2 ? 'SECOND' : student.year_level === 3 ? 'THIRD' : 'FOURTH'} YEAR</li>
-              <li className="sd-status-enrolled !text-green-900">{student.status}</li>
-            </ul>
-          </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========== ADVISORY + REGISTRAR SECTION ========== */}
-      <section className="sd-top-section">
-        <div className="sd-advisory-box">
-          <h3 className="sd-advisory-title">
-            <FiAlertTriangle className="sd-advisory-icon" />
-            Advisory
-          </h3>
-          <p className="sd-advisory-text">
-            TMCC students are reminded to use their <strong>official student portal accounts</strong> for the Automated Student Records Management System (ASRMS). Do not share your password with anyone. For record requests and verification, coordinate with the <strong>Registrar&apos;s Office</strong>. This system supports faster processing of academic documents as stated in the ASRMS capstone project.
-          </p>
-        </div>
-        <div className="sd-office-box">
-          <h3 className="sd-office-title">Registrar&apos;s Office</h3>
-          <ul className="sd-office-list">
-            <li>Policies on Shifters and Transferees</li>
-            <li>Student Records Management – ASRMS User Guide AY 2025-2026</li>
-          </ul>
-        </div>
-      </section>
-
-      {/* ========== MAIN NAV ========== */}
-      <nav className="sd-main-nav">
-        <Link to="/dashboard" className="sd-main-nav-item active">Home</Link>
-        <Link to="/request" className="sd-main-nav-item">Request Record</Link>
-      </nav>
-
+    <>
       {/* ========== ENROLLMENT SECTION ========== */}
       <section className="sd-content">
         <div className="sd-enrollment-section">
-          <h2 className="sd-section-title sd-title-red">Enrollment - {student.semester} {student.academic_year}</h2>
+          <h2 className="sd-section-title sd-title-red">Enrollment - {semester} {academicYear}</h2>
           <p className="sd-filter-hint">
             <FiInfo className="sd-info-icon" />
-            Click &quot;Filter Option..&quot; button to change the default schoolyear / semester
+            Use the links below to view your COR, subjects, grades, curriculum, or request academic records.
           </p>
-          <button type="button" className="sd-filter-btn">Filter Option..</button>
 
           <div className="sd-quick-links">
-            <Link to="/request" className="sd-quick-link"><span className="sd-quick-icon"><FiFileText /></span> Certificate of Registration (COR)</Link>
-            <Link to="/request" className="sd-quick-link"><span className="sd-quick-icon"><FiFileText /></span> Request Academic Record (Transcript, Certificate, etc.)</Link>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiLayers /></span> Subjects</button>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiClipboard /></span> Grades</button>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiBook /></span> Curriculum</button>
-            <button type="button" className="sd-quick-link"><span className="sd-quick-icon"><FiPrinter /></span> View Copy of Grades</button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, cor: true }))}>
+              <span className="sd-quick-icon"><FiFileText /></span> Certificate of Registration (COR)
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, requestRecord: true }))}>
+              <span className="sd-quick-icon"><FiFileText /></span> Request Academic Record (Transcript, Certificate, etc.)
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, subjects: true }))}>
+              <span className="sd-quick-icon"><FiLayers /></span> Subjects
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, grades: true }))}>
+              <span className="sd-quick-icon"><FiClipboard /></span> Grades
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, curriculum: true }))}>
+              <span className="sd-quick-icon"><FiBook /></span> Curriculum
+            </button>
+            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, viewCopyOfGrades: true }))}>
+              <span className="sd-quick-icon"><FiPrinter /></span> View Copy of Grades
+            </button>
           </div>
         </div>
 
@@ -183,8 +88,18 @@ const StudentDashboard = () => {
           </div>
         </div>
       </section>
-      </div>
-    </div>
+
+      <CORModal isOpen={modalOpen.cor} onClose={() => setModalOpen((m) => ({ ...m, cor: false }))} />
+      <RequestRecordModal
+        isOpen={modalOpen.requestRecord}
+        onClose={() => setModalOpen((m) => ({ ...m, requestRecord: false }))}
+        onSuccess={() => setModalOpen((m) => ({ ...m, requestRecord: false }))}
+      />
+      <SubjectsModal isOpen={modalOpen.subjects} onClose={() => setModalOpen((m) => ({ ...m, subjects: false }))} />
+      <GradesModal isOpen={modalOpen.grades} onClose={() => setModalOpen((m) => ({ ...m, grades: false }))} />
+      <CurriculumModal isOpen={modalOpen.curriculum} onClose={() => setModalOpen((m) => ({ ...m, curriculum: false }))} />
+      <ViewCopyOfGradesModal isOpen={modalOpen.viewCopyOfGrades} onClose={() => setModalOpen((m) => ({ ...m, viewCopyOfGrades: false }))} />
+    </>
   );
 };
 

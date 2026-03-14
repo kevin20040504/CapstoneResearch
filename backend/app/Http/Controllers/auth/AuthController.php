@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Services\AuthService;
@@ -76,6 +77,29 @@ class AuthController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Logout failed.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Something went wrong.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Change password for authenticated user (all roles).
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        try {
+            $this->authService->changePassword(
+                $request->user(),
+                $request->validated('current_password'),
+                $request->validated('password')
+            );
+
+            return response()->json(['message' => 'Password changed successfully.']);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Password change failed.',
                 'error' => config('app.debug') ? $e->getMessage() : 'Something went wrong.',
             ], 500);
         }
