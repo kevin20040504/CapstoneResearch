@@ -46,6 +46,7 @@ export const useCurrentUserQuery = (options = {}) => {
     queryFn: () => authApi.getCurrentUser(),
     enabled: !!token,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false, // avoid long loading when backend is unreachable (timeout already in apiClient)
     initialData: () => {
       const { user } = getStoredAuth();
       return user ?? undefined;

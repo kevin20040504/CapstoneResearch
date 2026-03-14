@@ -80,4 +80,42 @@ export const staffApi = {
     const { data } = await apiClient.put(`/staff/students/${id}`, payload);
     return data;
   },
+
+  /** List subjects for dropdowns (staff/admin). Per thesis: subject code, title, units. */
+  getSubjects: async () => {
+    const { data } = await apiClient.get('/staff/subjects');
+    return data;
+  },
+
+  /** Add enrollment. Required: subject_id, academic_year, semester. Optional: status. */
+  createEnrollment: async (studentId, payload) => {
+    const { data } = await apiClient.post(`/staff/students/${studentId}/enrollments`, payload);
+    return data;
+  },
+
+  updateEnrollment: async (studentId, enrollmentId, payload) => {
+    const { data } = await apiClient.put(`/staff/students/${studentId}/enrollments/${enrollmentId}`, payload);
+    return data;
+  },
+
+  deleteEnrollment: async (studentId, enrollmentId) => {
+    const { data } = await apiClient.delete(`/staff/students/${studentId}/enrollments/${enrollmentId}`);
+    return data;
+  },
+
+  /** Add grade. Required: subject_id, academic_year, semester. Optional: grade_value, remarks. */
+  createGrade: async (studentId, payload) => {
+    const { data } = await apiClient.post(`/staff/students/${studentId}/grades`, payload);
+    return data;
+  },
+
+  updateGrade: async (studentId, gradeId, payload) => {
+    const { data } = await apiClient.put(`/staff/students/${studentId}/grades/${gradeId}`, payload);
+    return data;
+  },
+
+  deleteGrade: async (studentId, gradeId) => {
+    const { data } = await apiClient.delete(`/staff/students/${studentId}/grades/${gradeId}`);
+    return data;
+  },
 };

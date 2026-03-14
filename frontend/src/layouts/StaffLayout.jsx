@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   FiInbox,
@@ -31,7 +31,7 @@ const StaffLayout = () => {
     documentsReleased: 0,
   });
 
-  useEffect(() => {
+  const fetchKpis = useCallback(() => {
     dashboardApi.getDashboard().then((res) => {
       const k = res?.kpis || {};
       setKpi({
@@ -42,6 +42,16 @@ const StaffLayout = () => {
       });
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchKpis();
+  }, [location.pathname, fetchKpis]);
+
+  useEffect(() => {
+    const onRefresh = () => fetchKpis();
+    window.addEventListener('staff:dashboard-refresh', onRefresh);
+    return () => window.removeEventListener('staff:dashboard-refresh', onRefresh);
+  }, [fetchKpis]);
 
   useEffect(() => {
     const updateDateTime = () => {

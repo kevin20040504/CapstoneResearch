@@ -5,6 +5,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 20000, // 20s - prevent infinite loading when backend is unreachable
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

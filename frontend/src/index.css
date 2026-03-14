@@ -1090,8 +1090,19 @@ button.primary:hover {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  font-size: 1.2rem;
-  color: #333;
+  background: #e8e8e8;
+}
+
+.sd-loading-logo {
+  width: 120px;
+  height: auto;
+  object-fit: contain;
+  animation: sd-loading-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sd-loading-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
 
 .student-dashboard {
@@ -1194,7 +1205,7 @@ button.primary:hover {
 .sd-profile-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 0%, transparent 35%, #b91c1c 35%, #b91c1c 100%);
+  background: linear-gradient(135deg, transparent 0%, transparent 35%, #1cb936 35%, #1cb93b 100%);
   opacity: 0.92;
   z-index: 0;
 }

@@ -58,7 +58,11 @@ const StudentLayout = () => {
   const isRequestPage = location.pathname === '/dashboard/request' || location.pathname === '/request';
 
   if (profileLoading && !profile) {
-    return <div className="sd-loading">Loading...</div>;
+    return (
+      <div className="sd-loading">
+        <img src="/transparent-bg-logo.png" alt="TMCC" className="sd-loading-logo" onError={(e) => { e.target.style.display = 'none'; }} />
+      </div>
+    );
   }
 
   return (

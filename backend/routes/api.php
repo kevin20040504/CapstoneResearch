@@ -39,10 +39,17 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 
 // ---- Staff & Admin: Students ----
 Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(function () {
+    Route::get('/subjects', [StudentController::class, 'subjects']);
     Route::get('/students', [StudentController::class, 'index']);
     Route::post('/students', [StudentController::class, 'store']);
     Route::get('/students/{id}', [StudentController::class, 'show']);
     Route::put('/students/{id}', [StudentController::class, 'update']);
+    Route::post('/students/{id}/enrollments', [StudentController::class, 'storeEnrollment']);
+    Route::put('/students/{id}/enrollments/{enrollmentId}', [StudentController::class, 'updateEnrollment']);
+    Route::delete('/students/{id}/enrollments/{enrollmentId}', [StudentController::class, 'destroyEnrollment']);
+    Route::post('/students/{id}/grades', [StudentController::class, 'storeGrade']);
+    Route::put('/students/{id}/grades/{gradeId}', [StudentController::class, 'updateGrade']);
+    Route::delete('/students/{id}/grades/{gradeId}', [StudentController::class, 'destroyGrade']);
 });
 
 // ---- Staff & Admin: Record requests (pending, approve, reject, approved list, release) ----

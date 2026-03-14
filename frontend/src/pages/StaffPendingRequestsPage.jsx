@@ -132,6 +132,7 @@ const StaffPendingRequestsPage = () => {
       }
       setPendingRequests((prev) => prev.filter((r) => r.id !== id));
       setConfirmAction(null);
+      window.dispatchEvent(new Event('staff:dashboard-refresh'));
     } catch (err) {
       const parsed = parseApiError(err);
       staffToast.error(type === 'approve' ? 'Approve failed' : 'Reject failed', parsed.message || 'Request failed.');

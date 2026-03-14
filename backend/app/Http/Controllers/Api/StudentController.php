@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Models\Enrollment;
+use App\Models\Grade;
 use App\Models\Student;
+use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -115,7 +118,7 @@ class StudentController extends Controller
             return response()->json(['message' => 'Forbidden. Staff or Admin only.'], 403);
         }
 
-        $student = Student::with('program')->find($id);
+        $student = Student::with(['program', 'enrollments.subject', 'grades.subject'])->find($id);
         if (! $student) {
             return response()->json(['message' => 'Student not found.'], 404);
         }
@@ -168,5 +171,195 @@ class StudentController extends Controller
             'message' => 'Student updated successfully.',
             'student' => $student,
         ]);
+    }
+
+    /**
+     * List subjects for dropdowns (staff/admin). Per thesis: subject code, title, units.
+     */
+    public function subjects(): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles(request()->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $subjects = Subject::orderBy('code')->get(['id', 'code', 'title', 'units']);
+        return response()->json(['subjects' => $subjects]);
+    }
+
+    /**
+     * Store enrollment for a student. Required: subject_id, academic_year, semester. Optional: status.
+     */
+    public function storeEnrollment(Request $request, int $id): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $student = Student::find($id);
+        if (! $student) {
+            return response()->json(['message' => 'Student not found.'], 404);
+        }
+        $validated = $request->validate([
+            'subject_id' => ['required', 'integer', 'exists:subjects,id'],
+            'academic_year' => ['required', 'string', 'max:20'],
+            'semester' => ['required', 'string', 'max:20'],
+            'status' => ['nullable', 'string', 'max:20', 'in:enrolled,completed,dropped'],
+        ], [
+            'subject_id.required' => 'Subject is required.',
+            'academic_year.required' => 'Academic year is required.',
+            'semester.required' => 'Semester is required.',
+        ]);
+        $validated['student_id'] = $student->student_id;
+        $validated['status'] = $validated['status'] ?? 'enrolled';
+        $exists = Enrollment::where('student_id', $student->student_id)
+            ->where('subject_id', $validated['subject_id'])
+            ->where('academic_year', $validated['academic_year'])
+            ->where('semester', $validated['semester'])
+            ->exists();
+        if ($exists) {
+            return response()->json(['message' => 'This student is already enrolled in this subject for the given academic year and semester.', 'errors' => ['subject_id' => ['Duplicate enrollment.']]], 422);
+        }
+        $enrollment = Enrollment::create($validated);
+        $enrollment->load('subject');
+        return response()->json(['message' => 'Enrollment added.', 'enrollment' => $enrollment], 201);
+    }
+
+    /**
+     * Update an enrollment (staff/admin).
+     */
+    public function updateEnrollment(Request $request, int $id, int $enrollmentId): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $enrollment = Enrollment::where('student_id', $id)->where('id', $enrollmentId)->first();
+        if (! $enrollment) {
+            return response()->json(['message' => 'Enrollment not found.'], 404);
+        }
+        $validated = $request->validate([
+            'academic_year' => ['sometimes', 'required', 'string', 'max:20'],
+            'semester' => ['sometimes', 'required', 'string', 'max:20'],
+            'status' => ['nullable', 'string', 'max:20', 'in:enrolled,completed,dropped'],
+        ]);
+        $enrollment->update($validated);
+        $enrollment->load('subject');
+        return response()->json(['message' => 'Enrollment updated.', 'enrollment' => $enrollment]);
+    }
+
+    /**
+     * Delete an enrollment (staff/admin).
+     */
+    public function destroyEnrollment(Request $request, int $id, int $enrollmentId): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $enrollment = Enrollment::where('student_id', $id)->where('id', $enrollmentId)->first();
+        if (! $enrollment) {
+            return response()->json(['message' => 'Enrollment not found.'], 404);
+        }
+        $enrollment->delete();
+        return response()->json(['message' => 'Enrollment removed.']);
+    }
+
+    /**
+     * Store grade for a student. Required: subject_id, academic_year, semester. Optional: grade_value, remarks.
+     */
+    public function storeGrade(Request $request, int $id): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $student = Student::find($id);
+        if (! $student) {
+            return response()->json(['message' => 'Student not found.'], 404);
+        }
+        $validated = $request->validate([
+            'subject_id' => ['required', 'integer', 'exists:subjects,id'],
+            'academic_year' => ['required', 'string', 'max:20'],
+            'semester' => ['required', 'string', 'max:20'],
+            'grade_value' => ['nullable', 'numeric', 'min:0', 'max:5.00'],
+            'remarks' => ['nullable', 'string', 'max:50'],
+        ], [
+            'subject_id.required' => 'Subject is required.',
+            'academic_year.required' => 'Academic year is required.',
+            'semester.required' => 'Semester is required.',
+        ]);
+        $validated['student_id'] = $student->student_id;
+        if (isset($validated['grade_value'])) {
+            $validated['grade_value'] = round((float) $validated['grade_value'], 2);
+        }
+        $exists = Grade::where('student_id', $student->student_id)
+            ->where('subject_id', $validated['subject_id'])
+            ->where('academic_year', $validated['academic_year'])
+            ->where('semester', $validated['semester'])
+            ->exists();
+        if ($exists) {
+            return response()->json(['message' => 'A grade already exists for this subject, academic year, and semester.', 'errors' => ['subject_id' => ['Duplicate grade.']]], 422);
+        }
+        $grade = Grade::create($validated);
+        $grade->load('subject');
+        return response()->json(['message' => 'Grade added.', 'grade' => $grade], 201);
+    }
+
+    /**
+     * Update a grade (staff/admin).
+     */
+    public function updateGrade(Request $request, int $id, int $gradeId): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $grade = Grade::where('student_id', $id)->where('id', $gradeId)->first();
+        if (! $grade) {
+            return response()->json(['message' => 'Grade not found.'], 404);
+        }
+        $validated = $request->validate([
+            'academic_year' => ['sometimes', 'required', 'string', 'max:20'],
+            'semester' => ['sometimes', 'required', 'string', 'max:20'],
+            'grade_value' => ['nullable', 'numeric', 'min:0', 'max:5.00'],
+            'remarks' => ['nullable', 'string', 'max:50'],
+        ]);
+        if (array_key_exists('grade_value', $validated) && $validated['grade_value'] !== null) {
+            $validated['grade_value'] = round((float) $validated['grade_value'], 2);
+        }
+        $grade->update($validated);
+        $grade->load('subject');
+        return response()->json(['message' => 'Grade updated.', 'grade' => $grade]);
+    }
+
+    /**
+     * Delete a grade (staff/admin).
+     */
+    public function destroyGrade(Request $request, int $id, int $gradeId): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $grade = Grade::where('student_id', $id)->where('id', $gradeId)->first();
+        if (! $grade) {
+            return response()->json(['message' => 'Grade not found.'], 404);
+        }
+        $grade->delete();
+        return response()->json(['message' => 'Grade removed.']);
     }
 }
