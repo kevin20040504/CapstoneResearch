@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FiInfo,
   FiFileText,
   FiLayers,
   FiClipboard,
-  FiBook,
   FiPrinter,
 } from 'react-icons/fi';
 import CORModal from '../components/student/CORModal';
 import RequestRecordModal from '../components/student/RequestRecordModal';
 import SubjectsModal from '../components/student/SubjectsModal';
 import GradesModal from '../components/student/GradesModal';
-import CurriculumModal from '../components/student/CurriculumModal';
 import ViewCopyOfGradesModal from '../components/student/ViewCopyOfGradesModal';
 import { studentApi } from '../lib/api/studentApi';
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [modalOpen, setModalOpen] = useState({ cor: false, requestRecord: false, subjects: false, grades: false, curriculum: false, viewCopyOfGrades: false });
+  const [modalOpen, setModalOpen] = useState({ cor: false, requestRecord: false, subjects: false, grades: false, viewCopyOfGrades: false });
 
   React.useEffect(() => {
     studentApi.getProfile().then(setProfile).catch(() => setProfile(null));
@@ -25,6 +25,24 @@ const StudentDashboard = () => {
 
   const academicYear = profile?.academic_year || '';
   const semester = profile?.semester || '';
+  const student = profile?.student || null;
+
+  const hasValue = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+  const needsSisUpdate = student
+    ? ![
+      student.address,
+      student.place_of_birth,
+      student.sex,
+      student.guardian_name,
+      student.citizenship,
+      student.elementary_school,
+      student.elementary_year,
+      student.high_school,
+      student.high_school_year,
+      student.previous_school,
+      student.previous_course,
+    ].every(hasValue)
+    : false;
 
   return (
     <>
@@ -34,7 +52,7 @@ const StudentDashboard = () => {
           <h2 className="sd-section-title sd-title-red">Enrollment - {semester} {academicYear}</h2>
           <p className="sd-filter-hint">
             <FiInfo className="sd-info-icon" />
-            Use the links below to view your COR, subjects, grades, curriculum, or request academic records.
+            Use the links below to view your COR, subjects, grades, or request academic records.
           </p>
 
           <div className="sd-quick-links">
@@ -50,9 +68,6 @@ const StudentDashboard = () => {
             <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, grades: true }))}>
               <span className="sd-quick-icon"><FiClipboard /></span> Grades
             </button>
-            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, curriculum: true }))}>
-              <span className="sd-quick-icon"><FiBook /></span> Curriculum
-            </button>
             <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, viewCopyOfGrades: true }))}>
               <span className="sd-quick-icon"><FiPrinter /></span> View Copy of Grades
             </button>
@@ -62,7 +77,35 @@ const StudentDashboard = () => {
         {/* ========== RECORD UPDATE (SIS/SIUF - student records) ========== */}
         <h2 className="sd-section-title sd-title-red">Record Update</h2>
         <div className="sd-cards-row">
-          <div className="sd-feature-card"><span className="sd-card-icon"><FiFileText /></span><div><strong>Student Information Sheet (SIS) and Student Information Updating Form (SIUF)</strong><br /><small>Update your student records for the Registrar</small></div></div>
+          <button
+            type="button"
+            className="sd-feature-card"
+            style={{ textAlign: 'left', position: 'relative' }}
+            onClick={() => navigate('/dashboard/sis')}
+          >
+            {needsSisUpdate && (
+              <span
+                aria-label="SIS not yet updated"
+                title="SIS not yet updated"
+                style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  width: 12,
+                  height: 12,
+                  borderRadius: 999,
+                  background: '#ef4444',
+                  boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.15)',
+                }}
+              />
+            )}
+            <span className="sd-card-icon"><FiFileText /></span>
+            <div>
+              <strong>Student Information Sheet (SIS) and Student Information Updating Form (SIUF)</strong>
+              <br />
+              <small>Update your student records for the Registrar</small>
+            </div>
+          </button>
         </div>
 
         {/* ========== TRUNKLINES + LOCAL NUMBERS ========== */}
@@ -97,7 +140,6 @@ const StudentDashboard = () => {
       />
       <SubjectsModal isOpen={modalOpen.subjects} onClose={() => setModalOpen((m) => ({ ...m, subjects: false }))} />
       <GradesModal isOpen={modalOpen.grades} onClose={() => setModalOpen((m) => ({ ...m, grades: false }))} />
-      <CurriculumModal isOpen={modalOpen.curriculum} onClose={() => setModalOpen((m) => ({ ...m, curriculum: false }))} />
       <ViewCopyOfGradesModal isOpen={modalOpen.viewCopyOfGrades} onClose={() => setModalOpen((m) => ({ ...m, viewCopyOfGrades: false }))} />
     </>
   );

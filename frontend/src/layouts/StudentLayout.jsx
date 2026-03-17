@@ -4,7 +4,6 @@ import {
   FiKey,
   FiLogOut,
   FiAlertTriangle,
-  FiFileText,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { studentApi } from '../lib/api/studentApi';

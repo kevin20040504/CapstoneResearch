@@ -1,13 +1,18 @@
 import { apiClient } from './client';
 
 /**
- * Student API — profile, COR, subjects, grades, curriculum, record requests.
  * All endpoints require auth:sanctum and role:student.
  */
 export const studentApi = {
   /** Get authenticated student's profile (student + program + academic year/semester). */
   getProfile: async () => {
     const { data } = await apiClient.get('/student/profile');
+    return data;
+  },
+
+  /** Update authenticated student's SIS/SIUF fields (own record only). */
+  updateSIS: async (payload) => {
+    const { data } = await apiClient.put('/student/sis', payload);
     return data;
   },
 
@@ -26,12 +31,6 @@ export const studentApi = {
   /** Grades. Params: academic_year?, semester? */
   getGrades: async (params = {}) => {
     const { data } = await apiClient.get('/student/grades', { params });
-    return data;
-  },
-
-  /** Curriculum for student's program (subjects by year level and semester). */
-  getCurriculum: async () => {
-    const { data } = await apiClient.get('/student/curriculum');
     return data;
   },
 

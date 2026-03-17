@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesRole;
+use App\Http\Requests\UpdateStudentSisRequest;
 use App\Models\SystemSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -179,6 +180,32 @@ class StudentProfileController extends Controller
         return response()->json([
             'program' => $program,
             'curriculum' => $curriculum,
+        ]);
+    }
+
+    /**
+     * Update authenticated student's SIS/SIUF fields (own record only).
+     */
+    public function updateSis(UpdateStudentSisRequest $request): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['student'])) {
+            return $err;
+        }
+
+        $student = $request->user()->student;
+        if (! $student) {
+            return response()->json(['message' => 'Student record not found.'], 404);
+        }
+
+        $student->update($request->validated());
+        $student->refresh();
+
+        return response()->json([
+            'message' => 'SIS updated successfully.',
+            'student' => $student->load('program'),
         ]);
     }
 }

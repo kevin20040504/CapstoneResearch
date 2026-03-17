@@ -27,6 +27,7 @@ import StaffEditStudentPage from '../pages/StaffEditStudentPage';
 import StudentLayout from '../layouts/StudentLayout';
 import StudentRequestRecordPage from '../pages/StudentRequestRecordPage';
 import StudentSignup from '../pages/StudentSignup';
+import StudentSISPage from '../pages/StudentSISPage';
 import { AuthProvider, useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 import { queryClient } from '../lib/react-query/queryClient';
 
@@ -98,6 +99,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <StudentDashboard /> },
           { path: 'request', element: <StudentRequestRecordPage /> },
+          { path: 'sis', element: <StudentSISPage /> },
         ],
       },
       {

@@ -96,6 +96,7 @@ Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(fu
     Route::get('/subjects', [StudentProfileController::class, 'subjects']);
     Route::get('/grades', [StudentProfileController::class, 'grades']);
     Route::get('/curriculum', [StudentProfileController::class, 'curriculum']);
+    Route::put('/sis', [StudentProfileController::class, 'updateSis']);
 });
 
 // ---- Student: Own record requests ----
