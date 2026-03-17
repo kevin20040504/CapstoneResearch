@@ -16,13 +16,6 @@ export const studentApi = {
     return data;
   },
 
-  /** Certificate of Registration — enrolled subjects for term. Params: academic_year?, semester? */
-  getCOR: async (params = {}) => {
-    const { data } = await apiClient.get('/student/cor', { params });
-    return data;
-  },
-
-  /** Enrolled subjects. Params: academic_year?, semester? */
   getSubjects: async (params = {}) => {
     const { data } = await apiClient.get('/student/subjects', { params });
     return data;

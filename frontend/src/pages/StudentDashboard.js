@@ -7,7 +7,6 @@ import {
   FiClipboard,
   FiPrinter,
 } from 'react-icons/fi';
-import CORModal from '../components/student/CORModal';
 import RequestRecordModal from '../components/student/RequestRecordModal';
 import SubjectsModal from '../components/student/SubjectsModal';
 import GradesModal from '../components/student/GradesModal';
@@ -17,7 +16,7 @@ import { studentApi } from '../lib/api/studentApi';
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [modalOpen, setModalOpen] = useState({ cor: false, requestRecord: false, subjects: false, grades: false, viewCopyOfGrades: false });
+  const [modalOpen, setModalOpen] = useState({ requestRecord: false, subjects: false, grades: false, viewCopyOfGrades: false });
 
   React.useEffect(() => {
     studentApi.getProfile().then(setProfile).catch(() => setProfile(null));
@@ -52,13 +51,10 @@ const StudentDashboard = () => {
           <h2 className="sd-section-title sd-title-red">Enrollment - {semester} {academicYear}</h2>
           <p className="sd-filter-hint">
             <FiInfo className="sd-info-icon" />
-            Use the links below to view your COR, subjects, grades, or request academic records.
+            Use the links below to view your subjects, grades, or request academic records.
           </p>
 
           <div className="sd-quick-links">
-            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, cor: true }))}>
-              <span className="sd-quick-icon"><FiFileText /></span> Certificate of Registration (COR)
-            </button>
             <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, requestRecord: true }))}>
               <span className="sd-quick-icon"><FiFileText /></span> Request Academic Record (Transcript, Certificate, etc.)
             </button>
@@ -132,7 +128,6 @@ const StudentDashboard = () => {
         </div>
       </section>
 
-      <CORModal isOpen={modalOpen.cor} onClose={() => setModalOpen((m) => ({ ...m, cor: false }))} />
       <RequestRecordModal
         isOpen={modalOpen.requestRecord}
         onClose={() => setModalOpen((m) => ({ ...m, requestRecord: false }))}

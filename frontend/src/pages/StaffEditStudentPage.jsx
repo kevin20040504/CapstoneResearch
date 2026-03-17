@@ -319,7 +319,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     setSubmitStatus(null);
     if (!validate()) return;
 
@@ -401,8 +401,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
             </div>
           )}
 
-          {/* Phase stepper — clickable to switch phases */}
-          <div className="flex items-center justify-center gap-0 py-4 mb-6 bg-gray-50 rounded-lg flex-wrap" aria-label="Form phases">
+          <div className="flex items-center justify-center gap-0 py-4 mb-6 bg-gray-50 rounded-lg flex-wrap" aria-label="Form steps">
             {[1, 2, 3, 4].map((phase) => (
               <div key={phase} className="flex items-center gap-2">
                 <button
@@ -412,7 +411,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
                     currentPhase === phase || currentPhase > phase ? 'bg-tmcc text-white hover:bg-tmcc-dark' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                   }`}
                   aria-pressed={currentPhase === phase}
-                  aria-label={`Phase ${phase}`}
+                  aria-label={`Step ${phase}`}
                 >
                   {phase}
                 </button>
@@ -421,18 +420,18 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
                   onClick={() => goToPhase(phase)}
                   className={`text-sm mr-2 focus:outline-none focus:ring-2 focus:ring-tmcc/30 rounded px-1 ${currentPhase === phase ? 'text-tmcc font-semibold' : 'text-gray-600 hover:text-gray-800'}`}
                 >
-                  Phase {phase}
+                  Step {phase}
                 </button>
                 {phase < 4 && <span className={`w-10 h-0.5 mx-1 ${currentPhase > phase ? 'bg-tmcc' : 'bg-gray-200'}`} />}
               </div>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="max-w-[720px]">
+          <div className="max-w-[720px]">
             {currentPhase === 1 && (
               <div className="mb-8 p-6 bg-white rounded-xl border-l-4 border-tmcc shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100">
                 <h4 className="flex items-center gap-3 m-0 mb-5 pb-3 text-base font-semibold text-gray-800 border-b-2 border-gray-200">
-                  <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">Phase 1</span>
+                  <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">Step 1</span>
                   Personal Information
                 </h4>
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4">
@@ -465,7 +464,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
             {currentPhase === 2 && (
               <div className="mb-8 p-6 bg-white rounded-xl border-l-4 border-tmcc shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100">
                 <h4 className="flex items-center gap-3 m-0 mb-5 pb-3 text-base font-semibold text-gray-800 border-b-2 border-gray-200">
-                  <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">Phase 2</span>
+                  <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">Step 2</span>
                   Contact Information
                 </h4>
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 mb-4">
@@ -489,7 +488,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
             {currentPhase === 3 && (
               <div className="mb-8 p-6 bg-white rounded-xl border-l-4 border-tmcc shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100">
                 <h4 className="flex items-center gap-3 m-0 mb-5 pb-3 text-base font-semibold text-gray-800 border-b-2 border-gray-200">
-                  <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">Phase 3</span>
+                  <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">Step 3</span>
                   Enrollment Information
                 </h4>
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
@@ -709,7 +708,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
                 </button>
               ) : (
                 <>
-                  <button type="submit" className="py-2.5 px-5 rounded-lg text-base font-medium bg-tmcc text-white hover:bg-tmcc-dark disabled:opacity-70 disabled:cursor-not-allowed" disabled={loading}>
+                  <button type="button" onClick={handleSubmit} className="py-2.5 px-5 rounded-lg text-base font-medium bg-tmcc text-white hover:bg-tmcc-dark disabled:opacity-70 disabled:cursor-not-allowed" disabled={loading}>
                     {loading ? 'Saving...' : 'Save Changes'}
                   </button>
                   <Link to={`${basePath}/students`} className="py-2.5 px-5 rounded-lg text-base font-medium bg-gray-600 text-white hover:bg-gray-700 no-underline inline-block" onClick={(e) => loading && e.preventDefault()}>
@@ -718,7 +717,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
                 </>
               )}
             </div>
-          </form>
+          </div>
         </div>
       </section>
     </>
