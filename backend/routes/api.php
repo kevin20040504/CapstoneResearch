@@ -40,6 +40,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 // ---- Staff & Admin: Students ----
 Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(function () {
     Route::get('/subjects', [StudentController::class, 'subjects']);
+    Route::get('/programs', [StudentController::class, 'programs']);
     Route::get('/students', [StudentController::class, 'index']);
     Route::post('/students', [StudentController::class, 'store']);
     Route::get('/students/{id}', [StudentController::class, 'show']);
@@ -57,10 +58,13 @@ Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(
     Route::get('/pending-requests', [RequestController::class, 'indexPending']);
     Route::patch('/requests/{id}/approve', [RequestController::class, 'approve']);
     Route::patch('/requests/{id}/reject', [RequestController::class, 'reject']);
+    Route::get('/appointment-slots', [RequestController::class, 'appointmentSlots']);
     Route::get('/approved-release', [RequestController::class, 'indexApproved']);
     Route::get('/rejected-requests', [RequestController::class, 'indexRejected']);
     Route::put('/requests/{id}/release', [RequestController::class, 'release']);
     Route::post('/transactions', [RequestController::class, 'storeTransaction']);
+    Route::get('/requests/{id}/transcript-template', [RequestController::class, 'downloadTranscriptTemplate']);
+    Route::get('/requests/{id}/approval-slip', [RequestController::class, 'downloadApprovalSlipStaff']);
 });
 
 // ---- Staff & Admin: Reports ----
@@ -104,4 +108,5 @@ Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(fu
     Route::get('/record-requests', [RecordRequestController::class, 'index']);
     Route::post('/record-requests', [RecordRequestController::class, 'store']);
     Route::get('/record-requests/{id}', [RecordRequestController::class, 'show']);
+    Route::get('/record-requests/{id}/approval-slip', [RequestController::class, 'downloadApprovalSlipStudent']);
 });

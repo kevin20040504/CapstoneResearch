@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiArrowRight, FiCheck } from 'react-icons/fi';
 import { staffToast } from '../lib/notifications';
 import Modal from '../components/ui/Modal';
 import { staffApi } from '../lib/api/staffApi';
 import { parseApiError } from '../lib/api/errors';
+import { queryKeys } from '../lib/react-query/queryKeys';
 
 const defaultForm = {
   student_number: '',
@@ -23,6 +25,7 @@ const TOTAL_PHASES = 3;
 
 const StaffNewStudentPage = ({ basePath = '/staff' }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -106,6 +109,7 @@ const StaffNewStudentPage = ({ basePath = '/staff' }) => {
         GPA: form.GPA !== '' ? parseFloat(form.GPA) : null,
       };
       const res = await staffApi.createStudent(payload);
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.staff.all, 'students'] });
       setSubmitStatus('success');
       setCreatedAccount(res?.account ? { username: res.account.username, password: res.account.password } : { username: form.student_number.trim(), password: 'password123' });
       setForm(defaultForm);

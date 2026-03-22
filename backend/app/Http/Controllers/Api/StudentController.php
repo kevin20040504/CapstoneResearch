@@ -8,6 +8,7 @@ use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Enrollment;
 use App\Models\Grade;
+use App\Models\Program;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
@@ -45,9 +46,32 @@ class StudentController extends Controller
             });
         }
 
+        if ($program = $request->input('program')) {
+            $program = trim((string) $program);
+            if ($program !== '') {
+                $query->whereHas('program', function ($q) use ($program) {
+                    $q->where('code', $program)->orWhere('name', $program);
+                });
+            }
+        }
+
         $sortKey = $request->input('sort', 'last_name');
         $sortDir = $request->input('dir', 'asc') === 'desc' ? 'desc' : 'asc';
-        $query->orderBy($sortKey, $sortDir);
+
+        $allowedColumns = ['student_id', 'student_number', 'first_name', 'last_name', 'email'];
+        if ($sortKey === 'name') {
+            $query->orderBy('last_name', $sortDir)->orderBy('first_name', $sortDir);
+        } elseif ($sortKey === 'course') {
+            $query->leftJoin('programs', 'students.program_id', '=', 'programs.id')
+                ->select('students.*')
+                ->orderBy('programs.code', $sortDir);
+        } elseif (in_array($sortKey, $allowedColumns, true)) {
+            $query->orderBy($sortKey, $sortDir);
+        } elseif ($sortKey === 'status') {
+            $query->orderBy('students.student_id', $sortDir);
+        } else {
+            $query->orderBy('last_name', 'asc');
+        }
 
         $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
         $students = $query->paginate($perPage);
@@ -171,6 +195,22 @@ class StudentController extends Controller
             'message' => 'Student updated successfully.',
             'student' => $student,
         ]);
+    }
+
+    /**
+     * List programs for staff filters (course dropdown).
+     */
+    public function programs(): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles(request()->user(), ['staff', 'admin'])) {
+            return $err;
+        }
+        $programs = Program::orderBy('code')->get(['id', 'code', 'name']);
+
+        return response()->json(['programs' => $programs]);
     }
 
     /**

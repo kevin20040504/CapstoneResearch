@@ -44,4 +44,11 @@ export const studentApi = {
     const { data } = await apiClient.get(`/student/record-requests/${id}`);
     return data;
   },
+
+  downloadApprovalSlip: async (id) => {
+    const response = await apiClient.get(`/student/record-requests/${id}/approval-slip`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
 };

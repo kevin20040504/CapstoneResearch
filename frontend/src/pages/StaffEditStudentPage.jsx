@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiArrowRight, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { staffApi } from '../lib/api/staffApi';
 import { staffToast } from '../lib/notifications';
+import { queryKeys } from '../lib/react-query/queryKeys';
 
 const defaultForm = {
   student_number: '',
@@ -31,6 +33,7 @@ const formatDateForInput = (val) => {
 const StaffEditStudentPage = ({ basePath = '/staff' }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const studentFromState = location.state?.student;
   const [form, setForm] = useState(defaultForm);
@@ -344,6 +347,7 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
         graduation_date: form.graduation_date || null,
         GPA: form.GPA !== '' ? parseFloat(form.GPA) : null,
       });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.staff.all, 'students'] });
       setSubmitStatus('success');
       staffToast.success('Student updated', 'Record saved successfully. Redirecting to Student Records.');
       setTimeout(() => navigate(`${basePath}/students`), 1500);

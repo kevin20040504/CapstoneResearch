@@ -7,7 +7,8 @@ export const queryKeys = {
     all: ['staff'],
     pendingRequests: () => [...queryKeys.staff.all, 'pending-requests'],
     approvedForRelease: () => [...queryKeys.staff.all, 'approved-release'],
-    students: (search) => [...queryKeys.staff.all, 'students', search ?? ''],
+    studentsList: (filters) => [...queryKeys.staff.all, 'students', filters],
+    programs: () => [...queryKeys.staff.all, 'programs'],
     reports: () => [...queryKeys.staff.all, 'reports'],
   },
 };

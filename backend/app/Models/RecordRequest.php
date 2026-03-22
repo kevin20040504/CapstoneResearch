@@ -27,6 +27,7 @@ class RecordRequest extends Model
         'requested_at',
         'processed_by',
         'processed_at',
+        'appointment_at',
         'released_at',
         'rejection_reason',
     ];
@@ -34,6 +35,7 @@ class RecordRequest extends Model
     protected $casts = [
         'requested_at' => 'datetime',
         'processed_at' => 'datetime',
+        'appointment_at' => 'datetime',
         'released_at' => 'datetime',
     ];
 

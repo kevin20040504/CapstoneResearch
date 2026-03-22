@@ -20,8 +20,8 @@ export const staffApi = {
     return data;
   },
 
-  approveRequest: async (id) => {
-    const { data } = await apiClient.patch(`/staff/requests/${id}/approve`);
+  approveRequest: async (id, payload = {}) => {
+    const { data } = await apiClient.patch(`/staff/requests/${id}/approve`, payload);
     return data;
   },
 
@@ -30,8 +30,8 @@ export const staffApi = {
     return data;
   },
 
-  getApprovedForRelease: async () => {
-    const { data } = await apiClient.get('/staff/approved-release');
+  getApprovedForRelease: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/approved-release', { params });
     return data;
   },
 
@@ -43,8 +43,33 @@ export const staffApi = {
     return data;
   },
 
+  downloadTranscriptTemplate: async (requestId) => {
+    const response = await apiClient.get(`/staff/requests/${requestId}/transcript-template`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+
+  getAppointmentSlots: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/appointment-slots', { params });
+    return data;
+  },
+
+  downloadApprovalSlip: async (requestId) => {
+    const response = await apiClient.get(`/staff/requests/${requestId}/approval-slip`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+
   getStudents: async (params = {}) => {
     const { data } = await apiClient.get('/staff/students', { params });
+    return data;
+  },
+
+  /** Program list for staff filters (course dropdown). Cached client-side via React Query. */
+  getPrograms: async () => {
+    const { data } = await apiClient.get('/staff/programs');
     return data;
   },
 

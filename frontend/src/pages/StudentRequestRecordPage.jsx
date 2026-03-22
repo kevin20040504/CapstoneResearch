@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiFileText, FiInfo, FiInbox, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
+import { FiFileText, FiInfo, FiInbox, FiCheckCircle, FiXCircle, FiClock, FiDownload } from 'react-icons/fi';
 import { studentApi } from '../lib/api/studentApi';
 import { parseApiError } from '../lib/api/errors';
 
@@ -21,6 +21,7 @@ const PURPOSES = [
 const STATUS_LABELS = {
   pending: { label: 'Pending', icon: FiClock, class: 'sd-tag-yellow' },
   approved: { label: 'Approved', icon: FiCheckCircle, class: 'sd-tag-open' },
+  released: { label: 'Released', icon: FiCheckCircle, class: 'sd-tag-open' },
   rejected: { label: 'Rejected', icon: FiXCircle, class: 'sd-tag-closed' },
 };
 
@@ -28,6 +29,21 @@ const formatDate = (val) => {
   if (!val) return '—';
   const d = new Date(val);
   return Number.isNaN(d.getTime()) ? val : d.toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' });
+};
+
+const saveBlob = (response, fallbackFilename) => {
+  const blob = response.data;
+  const disposition = response.headers?.['content-disposition'] || '';
+  const matchedName = disposition.match(/filename="?([^"]+)"?/i);
+  const filename = matchedName?.[1] || fallbackFilename;
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };
 
 const StudentRequestRecordPage = () => {
@@ -58,6 +74,15 @@ const StudentRequestRecordPage = () => {
       setLoading(false);
     }
   }, []);
+
+  const handleDownloadSlip = async (requestId) => {
+    try {
+      const response = await studentApi.downloadApprovalSlip(requestId);
+      saveBlob(response, `request_approval_slip_${requestId}.pdf`);
+    } catch (err) {
+      setFormError(parseApiError(err)?.message || 'Failed to download approval slip.');
+    }
+  };
 
   useEffect(() => {
     fetchRequests();
@@ -201,7 +226,8 @@ const StudentRequestRecordPage = () => {
                     <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Copies</th>
                     <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Status</th>
                     <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Requested</th>
-                    <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Processed / Notes</th>
+                    <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Schedule / Notes</th>
+                    <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">Slip</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -223,7 +249,22 @@ const StudentRequestRecordPage = () => {
                         <td className="py-3 px-4 text-gray-700">
                           {req.status === 'rejected' && req.rejection_reason
                             ? req.rejection_reason
-                            : formatDate(req.processed_at)}
+                            : req.appointment_at
+                              ? `Appointment: ${formatDate(req.appointment_at)}`
+                              : formatDate(req.processed_at)}
+                        </td>
+                        <td className="py-3 px-4 text-gray-700">
+                          {(req.status === 'approved' || req.status === 'released') ? (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gray-700 hover:bg-gray-800"
+                              onClick={() => handleDownloadSlip(req.id)}
+                            >
+                              <FiDownload className="w-3.5 h-3.5" /> Download PDF
+                            </button>
+                          ) : (
+                            '—'
+                          )}
                         </td>
                       </tr>
                     );
