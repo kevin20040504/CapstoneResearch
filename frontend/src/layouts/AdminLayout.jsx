@@ -8,12 +8,15 @@ import {
   FiLogOut,
   FiPackage,
   FiChevronRight,
+  FiChevronDown,
   FiUser,
   FiGrid,
   FiCheckCircle,
   FiSettings,
   FiUserPlus,
-  FiEye,
+  FiClipboard,
+  FiEdit2,
+  FiSearch,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
@@ -62,16 +65,64 @@ const AdminLayout = () => {
   const pathname = location.pathname;
   const isNewStudentPage = pathname === '/admin/students/new';
 
-  const navItems = [
+  const isRegistrarRoute =
+    pathname.startsWith('/admin/students') || pathname.startsWith('/admin/view-records');
+  const [registrarOpen, setRegistrarOpen] = useState(isRegistrarRoute);
+
+  useEffect(() => {
+    if (isRegistrarRoute) setRegistrarOpen(true);
+  }, [isRegistrarRoute, pathname]);
+
+  const navItemsBeforeRegistrar = [
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/admin' },
     { id: 'users', label: 'User Management', icon: FiUserPlus, path: '/admin/users' },
     { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/admin/requests' },
-    { id: 'students', label: 'Student Records', icon: FiUsers, path: '/admin/students' },
-    { id: 'view-records', label: 'View Records', icon: FiEye, path: '/admin/view-records' },
+  ];
+
+  const registrarSubItems = [
+    {
+      id: 'students',
+      label: 'Student Records',
+      icon: FiEdit2,
+      path: '/admin/students',
+      isActive: (p) =>
+        !isNewStudentPage && (p === '/admin/students' || p.startsWith('/admin/students/')),
+    },
+    {
+      id: 'view-records',
+      label: 'View Records',
+      icon: FiSearch,
+      path: '/admin/view-records',
+      isActive: (p) => p.startsWith('/admin/view-records'),
+    },
+  ];
+
+  const navItemsAfterRegistrar = [
     { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/admin/document-release' },
     { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/admin/reports' },
     { id: 'settings', label: 'System Settings', icon: FiSettings, path: '/admin/settings' },
   ];
+
+  const renderNavLink = (item) => {
+    const { id, label, icon: Icon, path } = item;
+    const isActive =
+      !isNewStudentPage &&
+      (pathname === path || (path === '/admin/students' && pathname.startsWith('/admin/students')));
+    return (
+      <Link
+        key={id}
+        to={path}
+        className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left no-underline transition-colors ${
+          isActive ? 'bg-white/25 text-white font-semibold' : 'text-white/95 hover:bg-white/15 hover:text-white'
+        }`}
+        aria-current={isActive ? 'page' : undefined}
+      >
+        <Icon className="w-5 h-5 shrink-0" aria-hidden />
+        <span className="flex-1">{label}</span>
+        <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
+      </Link>
+    );
+  };
 
   const handleChangePassword = () => setChangePasswordOpen(true);
 
@@ -100,23 +151,64 @@ const AdminLayout = () => {
         </div>
 
         <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5" aria-label="Admin dashboard navigation">
-          {navItems.map(({ id, label, icon: Icon, path }) => {
-            const isActive = !isNewStudentPage && (pathname === path || (path === '/admin/students' && pathname.startsWith('/admin/students')));
-            return (
-              <Link
-                key={id}
-                to={path}
-                className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left no-underline transition-colors ${
-                  isActive ? 'bg-white/25 text-white font-semibold' : 'text-white/95 hover:bg-white/15 hover:text-white'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
+          {navItemsBeforeRegistrar.map(renderNavLink)}
+
+          <div className="mt-0.5">
+            <button
+              type="button"
+              className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left transition-colors text-white/95 hover:bg-white/15 hover:text-white ${
+                isRegistrarRoute ? 'bg-white/20' : ''
+              }`}
+              onClick={() => setRegistrarOpen((o) => !o)}
+              aria-expanded={registrarOpen}
+              aria-controls="admin-registrar-submenu"
+            >
+              <FiClipboard className="w-5 h-5 shrink-0" aria-hidden />
+              <span className="flex-1 font-medium">Registrar</span>
+              {registrarOpen ? (
+                <FiChevronDown className="w-4 h-4 shrink-0 opacity-90" aria-hidden />
+              ) : (
+                <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" aria-hidden />
+              )}
+            </button>
+
+            {registrarOpen && (
+              <div
+                id="admin-registrar-submenu"
+                className="mt-2 mx-1 mb-1 rounded-[10px] bg-white p-4 shadow-[0_4px_14px_rgba(0,0,0,0.12)]"
               >
-                <Icon className="w-5 h-5 shrink-0" aria-hidden />
-                <span className="flex-1">{label}</span>
-                <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
-              </Link>
-            );
-          })}
+                <p className="m-0 mb-3 text-[0.65rem] font-semibold tracking-wider text-slate-500 uppercase">
+                  Student Records:
+                </p>
+                <ul className="m-0 p-0 list-none flex flex-col gap-1">
+                  {registrarSubItems.map(({ id, label, icon: SubIcon, path, isActive: isSubActive }) => {
+                    const active = isSubActive(pathname);
+                    return (
+                      <li key={id}>
+                        <Link
+                          to={path}
+                          className={`flex items-center gap-2.5 py-2 px-2 rounded-md text-[0.9rem] no-underline transition-colors ${
+                            active
+                              ? 'text-[#1ac76a] font-semibold bg-green-50/80'
+                              : 'text-gray-800 hover:bg-gray-50'
+                          }`}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          <SubIcon
+                            className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-[#1ac76a]' : 'text-gray-600'}`}
+                            aria-hidden
+                          />
+                          <span>{label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {navItemsAfterRegistrar.map(renderNavLink)}
         </nav>
 
         <div className="p-4 pt-4 border-t border-white/15">
