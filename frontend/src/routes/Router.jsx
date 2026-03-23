@@ -24,23 +24,26 @@ import StaffDocumentReleasePage from '../pages/StaffDocumentReleasePage';
 import StaffReportsPage from '../pages/StaffReportsPage';
 import StaffNewStudentPage from '../pages/StaffNewStudentPage';
 import StaffEditStudentPage from '../pages/StaffEditStudentPage';
-import RecordRequest from '../pages/RecordRequest';
+import ViewRecordsPage from '../pages/ViewRecordsPage';
+import StudentLayout from '../layouts/StudentLayout';
+import StudentRequestRecordPage from '../pages/StudentRequestRecordPage';
 import StudentSignup from '../pages/StudentSignup';
+import StudentSISPage from '../pages/StudentSISPage';
 import { AuthProvider, useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 import { queryClient } from '../lib/react-query/queryClient';
 
 function RootLayout() {
   const location = useLocation();
   const isFullPage = location.pathname === '/' || location.pathname === '/signup';
-  const isStudentDashboard = location.pathname === '/dashboard';
+  const isStudentArea = location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard/');
   const isStaffArea = location.pathname.startsWith('/staff');
   const isAdminArea = location.pathname.startsWith('/admin');
 
   return (
     <>
       <Toaster position="top-right" theme="light" />
-      {!isFullPage && !isStudentDashboard && !isStaffArea && !isAdminArea && <Navbar />}
-      {isFullPage || isStudentDashboard || isStaffArea || isAdminArea ? (
+      {!isFullPage && !isStudentArea && !isStaffArea && !isAdminArea && <Navbar />}
+      {isFullPage || isStudentArea || isStaffArea || isAdminArea ? (
         <Outlet />
       ) : (
         <div className="container">
@@ -91,9 +94,14 @@ const router = createBrowserRouter([
         path: 'dashboard',
         element: (
           <ProtectedRoute allowedRoles={['student', 'admin', 'staff']}>
-            <StudentDashboard />
+            <StudentLayout />
           </ProtectedRoute>
         ),
+        children: [
+          { index: true, element: <StudentDashboard /> },
+          { path: 'request', element: <StudentRequestRecordPage /> },
+          { path: 'sis', element: <StudentSISPage /> },
+        ],
       },
       {
         path: 'staff',
@@ -106,6 +114,7 @@ const router = createBrowserRouter([
           { index: true, element: <StaffDashboardPage /> },
           { path: 'requests', element: <StaffPendingRequestsPage /> },
           { path: 'students', element: <StaffStudentRecordsPage /> },
+          { path: 'view-records', element: <ViewRecordsPage /> },
           { path: 'students/new', element: <StaffNewStudentPage /> },
           { path: 'students/:id/edit', element: <StaffEditStudentPage /> },
           { path: 'document-release', element: <StaffDocumentReleasePage /> },
@@ -124,6 +133,7 @@ const router = createBrowserRouter([
           { path: 'users', element: <AdminUserManagementPage /> },
           { path: 'requests', element: <AdminPendingRequestsPage /> },
           { path: 'students', element: <AdminStudentRecordsPage /> },
+          { path: 'view-records', element: <ViewRecordsPage /> },
           { path: 'students/new', element: <AdminNewStudentPage /> },
           { path: 'students/:id/edit', element: <AdminEditStudentPage /> },
           { path: 'document-release', element: <AdminDocumentReleasePage /> },
@@ -133,11 +143,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'request',
-        element: (
-          <ProtectedRoute allowedRoles={['student', 'admin', 'staff']}>
-            <RecordRequest />
-          </ProtectedRoute>
-        ),
+        element: <Navigate to="/dashboard/request" replace />,
       },
     ],
   },

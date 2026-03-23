@@ -1,21 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiInbox, FiUsers, FiCheck, FiClock, FiDownload } from 'react-icons/fi';
 import { adminToast } from '../../lib/notifications';
-
-const MOCK_SUMMARY = {
-  totalRequestsMonth: 24,
-  avgProcessingDays: 2.5,
-  activeStudents: 982,
-  approvalRate: 95,
-};
-
-const MOCK_RECENT_REQUESTS = [
-  { id: 1, student_name: 'Juan Dela Cruz', record_type: 'Transcript', status: 'Released', date: '2026-02-28' },
-  { id: 2, student_name: 'Maria Santos', record_type: 'Certificate', status: 'Approved', date: '2026-02-27' },
-  { id: 3, student_name: 'Pedro Reyes', record_type: 'Diploma', status: 'Pending', date: '2026-02-26' },
-  { id: 4, student_name: 'Ana Lopez', record_type: 'Transcript', status: 'Released', date: '2026-02-25' },
-  { id: 5, student_name: 'Carlos Mendoza', record_type: 'Certificate', status: 'Rejected', date: '2026-02-24' },
-];
+import { staffApi } from '../../lib/api/staffApi';
+import { adminApi } from '../../lib/api/adminApi';
+import { parseApiError } from '../../lib/api/errors';
 
 const statusClass = (status) => {
   switch (status?.toLowerCase()) {
@@ -27,24 +15,153 @@ const statusClass = (status) => {
   }
 };
 
+function escapeCsvCell(val) {
+  const s = val == null ? '' : String(val);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadCsv(filename, rows, headers) {
+  const lines = [
+    headers.map(escapeCsvCell).join(','),
+    ...rows.map((row) => row.map(escapeCsvCell).join(',')),
+  ];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function mapHistoryRow(r) {
+  return {
+    id: r.id,
+    student_name: r.student_name ?? (r.student ? [r.student.first_name, r.student.last_name].filter(Boolean).join(' ') : '—'),
+    record_type: r.record_type ? r.record_type.charAt(0).toUpperCase() + r.record_type.slice(1) : '—',
+    status: r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : '—',
+    date: r.requested_at
+      ? new Date(r.requested_at).toLocaleDateString('en-PH', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      : '—',
+  };
+}
+
+function openPrintableExport(exportData, summary) {
+  const w = window.open('', '_blank');
+  if (!w) {
+    adminToast.error('Popup blocked', 'Allow popups to print or save as PDF.');
+    return;
+  }
+  const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const summaryRows = summary
+    ? `<p style="margin:0 0 12px;font-size:14px;">
+        Total requests: <strong>${esc(summary.total_requests)}</strong>
+        · Avg. processing (days): <strong>${summary.avg_processing_time_days != null ? esc(String(summary.avg_processing_time_days)) : '—'}</strong>
+        · Approval rate: <strong>${summary.approval_rate != null ? `${esc(String(summary.approval_rate))}%` : '—'}</strong>
+      </p>`
+    : '';
+  const tableRows = exportData.map((row) => `
+    <tr>
+      <td>${esc(row.student_number)}</td>
+      <td>${esc(row.student_name)}</td>
+      <td>${esc(row.record_type)}</td>
+      <td>${esc(row.purpose)}</td>
+      <td>${esc(row.status)}</td>
+      <td>${esc(row.requested_at)}</td>
+      <td>${esc(row.processed_at)}</td>
+      <td>${esc(row.released_at)}</td>
+    </tr>
+  `).join('');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Reports export</title>
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 24px; color: #111; }
+      h1 { font-size: 20px; margin: 0 0 16px; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+      th { background: #f3f4f6; }
+    </style></head><body>
+    <h1>Record requests report</h1>
+    ${summaryRows}
+    <table>
+      <thead><tr>
+        <th>Student #</th><th>Name</th><th>Record type</th><th>Purpose</th><th>Status</th>
+        <th>Requested</th><th>Processed</th><th>Released</th>
+      </tr></thead>
+      <tbody>${tableRows || '<tr><td colspan="8">No records.</td></tr>'}</tbody>
+    </table>
+    </body></html>`);
+  w.document.close();
+  w.onload = () => {
+    w.focus();
+    w.print();
+  };
+}
+
 const AdminReportsPage = () => {
-  const [summary] = useState(MOCK_SUMMARY);
-  const [recentRequests] = useState(MOCK_RECENT_REQUESTS);
+  const [summary, setSummary] = useState(null);
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [exportLoading, setExportLoading] = useState(false);
 
-  const handleExportCSV = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    Promise.all([
+      staffApi.getReportsSummary(),
+      staffApi.getTransactionHistory({ per_page: 20 }),
+    ])
+      .then(([summaryRes, historyRes]) => {
+        if (cancelled) return;
+        setSummary(summaryRes || {});
+        const list = Array.isArray(historyRes?.data)
+          ? historyRes.data
+          : (Array.isArray(historyRes) ? historyRes : []);
+        setRecentRequests(list.map(mapHistoryRow));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const parsed = parseApiError(err);
+          setLoadError(parsed.message || 'Failed to load reports.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const runExport = async (kind) => {
     setExportLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setExportLoading(false);
-    adminToast.success('Export completed', 'Report exported as CSV. (UI mock)');
+    try {
+      const res = await adminApi.exportReports();
+      const exportData = Array.isArray(res?.export_data) ? res.export_data : [];
+      const summaryExport = res?.summary ?? null;
+      if (kind === 'csv') {
+        const headers = [
+          'student_number', 'student_name', 'record_type', 'purpose', 'status',
+          'requested_at', 'processed_at', 'released_at',
+        ];
+        const rows = exportData.map((row) => headers.map((h) => row[h]));
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        downloadCsv(`reports_export_${stamp}.csv`, rows, headers);
+        adminToast.success('Export completed', 'CSV downloaded.');
+      } else {
+        openPrintableExport(exportData, summaryExport);
+        adminToast.success('Print dialog opened', 'Use your browser to save as PDF.');
+      }
+    } catch (err) {
+      const parsed = parseApiError(err);
+      adminToast.error('Export failed', parsed.message || 'Could not export reports.');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
-  const handleExportPDF = async () => {
-    setExportLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setExportLoading(false);
-    adminToast.success('Export completed', 'Report exported as PDF. (UI mock)');
-  };
+  const handleExportCSV = () => runExport('csv');
+  const handleExportPDF = () => runExport('pdf');
 
   return (
     <>
@@ -73,43 +190,55 @@ const AdminReportsPage = () => {
         </div>
       </section>
 
+      {loadError && (
+        <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
+          {loadError}
+        </div>
+      )}
+
       <section className="bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden mb-6">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="mt-0 mb-2 text-lg font-semibold text-gray-800">Summary (This Month)</h3>
-          <p className="m-0 text-sm text-gray-500">Key performance indicators — admin full access.</p>
+          <h3 className="mt-0 mb-2 text-lg font-semibold text-gray-800">Summary</h3>
+          <p className="m-0 text-sm text-gray-500">Key performance indicators from live data.</p>
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-tmcc">
-            <FiInbox className="w-7 h-7 mb-2 text-tmcc" aria-hidden />
-            <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Total Requests</h4>
-            <p className="m-0 text-2xl font-bold text-gray-800">{summary.totalRequestsMonth}</p>
-            <small className="block mt-1 text-gray-400 text-xs">This month</small>
+        {loading && !summary ? (
+          <div className="p-8 text-center text-gray-500">Loading summary...</div>
+        ) : (
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-tmcc">
+              <FiInbox className="w-7 h-7 mb-2 text-tmcc" aria-hidden />
+              <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Pending Requests</h4>
+              <p className="m-0 text-2xl font-bold text-gray-800">{summary?.pending_requests ?? '—'}</p>
+              <small className="block mt-1 text-gray-400 text-xs">Awaiting review</small>
+            </div>
+            <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-blue-500">
+              <FiClock className="w-7 h-7 mb-2 text-blue-500" aria-hidden />
+              <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Processed Today</h4>
+              <p className="m-0 text-2xl font-bold text-gray-800">{summary?.processed_today ?? '—'}</p>
+              <small className="block mt-1 text-gray-400 text-xs">Approved/rejected today</small>
+            </div>
+            <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-indigo-500">
+              <FiUsers className="w-7 h-7 mb-2 text-indigo-500" aria-hidden />
+              <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Students</h4>
+              <p className="m-0 text-2xl font-bold text-gray-800">{summary?.students_count ?? '—'}</p>
+              <small className="block mt-1 text-gray-400 text-xs">Total in system</small>
+            </div>
+            <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-green-500">
+              <FiCheck className="w-7 h-7 mb-2 text-green-500" aria-hidden />
+              <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Approval Rate</h4>
+              <p className="m-0 text-2xl font-bold text-gray-800">
+                {summary?.approval_rate != null ? `${summary.approval_rate}%` : '—'}
+              </p>
+              <small className="block mt-1 text-gray-400 text-xs">Successful approvals</small>
+            </div>
           </div>
-          <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-blue-500">
-            <FiClock className="w-7 h-7 mb-2 text-blue-500" aria-hidden />
-            <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Avg. Processing Time</h4>
-            <p className="m-0 text-2xl font-bold text-gray-800">{summary.avgProcessingDays} days</p>
-            <small className="block mt-1 text-gray-400 text-xs">From request to release</small>
-          </div>
-          <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-indigo-500">
-            <FiUsers className="w-7 h-7 mb-2 text-indigo-500" aria-hidden />
-            <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Active Students</h4>
-            <p className="m-0 text-2xl font-bold text-gray-800">{summary.activeStudents}</p>
-            <small className="block mt-1 text-gray-400 text-xs">Current enrollment</small>
-          </div>
-          <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-green-500">
-            <FiCheck className="w-7 h-7 mb-2 text-green-500" aria-hidden />
-            <h4 className="m-0 mb-2 text-sm text-gray-500 font-medium">Approval Rate</h4>
-            <p className="m-0 text-2xl font-bold text-gray-800">{summary.approvalRate}%</p>
-            <small className="block mt-1 text-gray-400 text-xs">Successful approvals</small>
-          </div>
-        </div>
+        )}
       </section>
 
       <section className="bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h3 className="mt-0 mb-2 text-lg font-semibold text-gray-800">Transaction History</h3>
-          <p className="m-0 text-sm text-gray-500">Full transaction history — export available for admin.</p>
+          <p className="m-0 text-sm text-gray-500">Recent record requests (newest first).</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse" aria-label="Transaction history">
@@ -122,23 +251,29 @@ const AdminReportsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {recentRequests.map((row) => (
-                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/80">
-                  <td className="py-3 px-4 text-gray-800">{row.student_name}</td>
-                  <td className="py-3 px-4 text-gray-700">{row.record_type}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-block py-1 px-3 rounded-full text-xs font-medium ${statusClass(row.status)}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-gray-700">{row.date}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan={4} className="py-6 text-center text-gray-500">Loading...</td></tr>
+              ) : recentRequests.length === 0 ? (
+                <tr><td colSpan={4} className="py-6 text-center text-gray-500 italic">No transactions yet.</td></tr>
+              ) : (
+                recentRequests.map((row) => (
+                  <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                    <td className="py-3 px-4 text-gray-800">{row.student_name}</td>
+                    <td className="py-3 px-4 text-gray-700">{row.record_type}</td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-block py-1 px-3 rounded-full text-xs font-medium ${statusClass(row.status)}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-gray-700">{row.date}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
         <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 text-sm text-gray-500 flex items-center justify-between">
-          <span>Admin: Full report access with CSV and PDF export.</span>
+          <span>CSV downloads all matching records; PDF opens a print view (save as PDF from the print dialog).</span>
         </div>
       </section>
     </>

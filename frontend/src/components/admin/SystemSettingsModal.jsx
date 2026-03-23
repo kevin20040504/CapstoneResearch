@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
-import { adminToast } from '../../lib/notifications';
 
-const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSuccess }) => {
+const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoading }) => {
   const [form, setForm] = useState({
     institutionName: '',
     institutionShortName: '',
@@ -39,13 +38,17 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSuccess }) =>
     e.preventDefault();
     setErrors({});
     if (!validate()) return;
+    if (!onSave) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setLoading(false);
-    onClose();
-    adminToast.success('Settings saved', 'System settings have been updated successfully.');
-    onSuccess?.(form);
+    try {
+      await onSave(form);
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const busy = loading || saveLoading;
 
   const inputBase = 'w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';
   const inputError = 'border-red-500 bg-red-50';
@@ -130,8 +133,8 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSuccess }) =>
           <button type="button" onClick={onClose} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300">
             Cancel
           </button>
-          <button type="submit" disabled={loading} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30 disabled:opacity-70">
-            {loading ? 'Saving...' : 'Save Settings'}
+          <button type="submit" disabled={busy} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30 disabled:opacity-70">
+            {busy ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
       </form>

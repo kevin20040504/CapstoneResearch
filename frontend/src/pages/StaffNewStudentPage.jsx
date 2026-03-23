@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiArrowRight, FiCheck } from 'react-icons/fi';
 import { staffToast } from '../lib/notifications';
 import Modal from '../components/ui/Modal';
+import { staffApi } from '../lib/api/staffApi';
+import { parseApiError } from '../lib/api/errors';
+import { queryKeys } from '../lib/react-query/queryKeys';
 
 const defaultForm = {
   student_number: '',
@@ -21,6 +25,7 @@ const TOTAL_PHASES = 3;
 
 const StaffNewStudentPage = ({ basePath = '/staff' }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -90,18 +95,38 @@ const StaffNewStudentPage = ({ basePath = '/staff' }) => {
     if (!validate()) return;
 
     setLoading(true);
-    // UI only — backend connection disabled for now
-    await new Promise((r) => setTimeout(r, 500));
-    setSubmitStatus('success');
-    setCreatedAccount({
-      username: form.student_number.trim(),
-      password: 'password123',
-    });
-    setForm(defaultForm);
-    setErrors({});
-    setCurrentPhase(1);
-    setLoading(false);
-    staffToast.success('Student created', `Account ${form.student_number.trim()} has been registered.`);
+    try {
+      const payload = {
+        student_number: form.student_number.trim(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        date_of_birth: form.date_of_birth,
+        email: form.email.trim(),
+        contact_number: form.contact_number?.trim() || null,
+        address: form.address?.trim() || null,
+        enrollment_date: form.enrollment_date,
+        graduation_date: form.graduation_date || null,
+        GPA: form.GPA !== '' ? parseFloat(form.GPA) : null,
+      };
+      const res = await staffApi.createStudent(payload);
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.staff.all, 'students'] });
+      setSubmitStatus('success');
+      setCreatedAccount(res?.account ? { username: res.account.username, password: res.account.password } : { username: form.student_number.trim(), password: 'password123' });
+      setForm(defaultForm);
+      setErrors({});
+      setCurrentPhase(1);
+      staffToast.success('Student created', `Account ${form.student_number.trim()} has been registered.`);
+    } catch (err) {
+      const parsed = parseApiError(err);
+      setSubmitStatus(parsed.message || 'Failed to create student.');
+      if (parsed.errors) {
+        const errMap = {};
+        Object.keys(parsed.errors).forEach((k) => { errMap[k] = parsed.errors[k][0]; });
+        setErrors(errMap);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearForm = () => {

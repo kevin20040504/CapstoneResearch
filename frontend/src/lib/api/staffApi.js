@@ -5,23 +5,33 @@ import { apiClient } from './client';
  * All endpoints require auth:sanctum and staff/admin role on backend.
  */
 export const staffApi = {
-  getPendingRequests: async () => {
-    const { data } = await apiClient.get('/staff/pending-requests');
+  getPendingRequests: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/pending-requests', { params });
     return data;
   },
 
-  approveRequest: async (id) => {
-    const { data } = await apiClient.patch(`/staff/requests/${id}/approve`);
+  getApprovedRequests: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/approved-release', { params });
     return data;
   },
 
-  rejectRequest: async (id) => {
-    const { data } = await apiClient.patch(`/staff/requests/${id}/reject`);
+  getRejectedRequests: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/rejected-requests', { params });
     return data;
   },
 
-  getApprovedForRelease: async () => {
-    const { data } = await apiClient.get('/staff/approved-release');
+  approveRequest: async (id, payload = {}) => {
+    const { data } = await apiClient.patch(`/staff/requests/${id}/approve`, payload);
+    return data;
+  },
+
+  rejectRequest: async (id, payload = {}) => {
+    const { data } = await apiClient.patch(`/staff/requests/${id}/reject`, payload);
+    return data;
+  },
+
+  getApprovedForRelease: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/approved-release', { params });
     return data;
   },
 
@@ -33,8 +43,33 @@ export const staffApi = {
     return data;
   },
 
+  downloadTranscriptTemplate: async (requestId) => {
+    const response = await apiClient.get(`/staff/requests/${requestId}/transcript-template`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+
+  getAppointmentSlots: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/appointment-slots', { params });
+    return data;
+  },
+
+  downloadApprovalSlip: async (requestId) => {
+    const response = await apiClient.get(`/staff/requests/${requestId}/approval-slip`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+
   getStudents: async (params = {}) => {
     const { data } = await apiClient.get('/staff/students', { params });
+    return data;
+  },
+
+  /** Program list for staff filters (course dropdown). Cached client-side via React Query. */
+  getPrograms: async () => {
+    const { data } = await apiClient.get('/staff/programs');
     return data;
   },
 
@@ -43,8 +78,21 @@ export const staffApi = {
     return data;
   },
 
+  /** Official transcript XLSX for a student (staff/admin). */
+  downloadStudentTranscript: async (studentId) => {
+    const response = await apiClient.get(`/staff/students/${studentId}/transcript`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+
   getReportsSummary: async () => {
     const { data } = await apiClient.get('/staff/reports/summary');
+    return data;
+  },
+
+  getTransactionHistory: async (params = {}) => {
+    const { data } = await apiClient.get('/staff/reports/transaction-history', { params });
     return data;
   },
 
@@ -63,6 +111,44 @@ export const staffApi = {
    */
   updateStudent: async (id, payload) => {
     const { data } = await apiClient.put(`/staff/students/${id}`, payload);
+    return data;
+  },
+
+  /** List subjects for dropdowns (staff/admin). Per thesis: subject code, title, units. */
+  getSubjects: async () => {
+    const { data } = await apiClient.get('/staff/subjects');
+    return data;
+  },
+
+  /** Add enrollment. Required: subject_id, academic_year, semester. Optional: status. */
+  createEnrollment: async (studentId, payload) => {
+    const { data } = await apiClient.post(`/staff/students/${studentId}/enrollments`, payload);
+    return data;
+  },
+
+  updateEnrollment: async (studentId, enrollmentId, payload) => {
+    const { data } = await apiClient.put(`/staff/students/${studentId}/enrollments/${enrollmentId}`, payload);
+    return data;
+  },
+
+  deleteEnrollment: async (studentId, enrollmentId) => {
+    const { data } = await apiClient.delete(`/staff/students/${studentId}/enrollments/${enrollmentId}`);
+    return data;
+  },
+
+  /** Add grade. Required: subject_id, academic_year, semester. Optional: grade_value, remarks. */
+  createGrade: async (studentId, payload) => {
+    const { data } = await apiClient.post(`/staff/students/${studentId}/grades`, payload);
+    return data;
+  },
+
+  updateGrade: async (studentId, gradeId, payload) => {
+    const { data } = await apiClient.put(`/staff/students/${studentId}/grades/${gradeId}`, payload);
+    return data;
+  },
+
+  deleteGrade: async (studentId, gradeId) => {
+    const { data } = await apiClient.delete(`/staff/students/${studentId}/grades/${gradeId}`);
     return data;
   },
 };

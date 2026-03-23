@@ -7,13 +7,12 @@ import { FiX } from 'react-icons/fi';
 const Modal = ({ isOpen, onClose, title, titleId, children, maxWidth = 'max-w-lg', closeOnBackdrop = true }) => {
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  const handleEscape = useCallback(
-    (e) => {
-      if (e.key === 'Escape') onClose();
-    },
-    [onClose]
-  );
+  const handleEscape = useCallback((e) => {
+    if (e.key === 'Escape') onCloseRef.current?.();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {

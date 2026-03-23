@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   FiInbox,
@@ -8,20 +8,19 @@ import {
   FiLogOut,
   FiPackage,
   FiChevronRight,
+  FiChevronDown,
   FiUser,
   FiGrid,
   FiCheckCircle,
   FiShield,
+  FiClipboard,
+  FiEdit2,
+  FiSearch,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
-
-const MOCK_KPI = {
-  pendingRequests: 3,
-  processedToday: 12,
-  studentsCount: 982,
-  documentsReleased: 8,
-};
+import { dashboardApi } from '../lib/api/dashboardApi';
+import { useCurrentTermQuery } from '../hooks/useCurrentTermQuery';
 
 const StaffLayout = () => {
   const { user, role, logout, logoutMutation } = useAuth();
@@ -30,7 +29,36 @@ const StaffLayout = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [kpi] = useState(MOCK_KPI);
+  const [kpi, setKpi] = useState({
+    pendingRequests: 0,
+    processedToday: 0,
+    studentsCount: 0,
+    documentsReleased: 0,
+  });
+
+  const { data: term, isLoading: termLoading } = useCurrentTermQuery();
+
+  const fetchKpis = useCallback(() => {
+    dashboardApi.getDashboard().then((res) => {
+      const k = res?.kpis || {};
+      setKpi({
+        pendingRequests: k.pending_requests ?? 0,
+        processedToday: k.processed_today ?? 0,
+        studentsCount: k.students_count ?? 0,
+        documentsReleased: k.documents_released_today ?? 0,
+      });
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchKpis();
+  }, [location.pathname, fetchKpis]);
+
+  useEffect(() => {
+    const onRefresh = () => fetchKpis();
+    window.addEventListener('staff:dashboard-refresh', onRefresh);
+    return () => window.removeEventListener('staff:dashboard-refresh', onRefresh);
+  }, [fetchKpis]);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -60,13 +88,69 @@ const StaffLayout = () => {
   const pathname = location.pathname;
   const isNewStudentPage = pathname === '/staff/students/new';
 
-  const navItems = [
+  const isRegistrarRoute =
+    pathname.startsWith('/staff/students') || pathname.startsWith('/staff/view-records');
+  const [registrarOpen, setRegistrarOpen] = useState(isRegistrarRoute);
+
+  useEffect(() => {
+    if (isRegistrarRoute) setRegistrarOpen(true);
+  }, [isRegistrarRoute, pathname]);
+
+  const navItemsBeforeRegistrar = [
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/staff' },
     { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/staff/requests' },
-    { id: 'students', label: 'Student Records', icon: FiUsers, path: '/staff/students' },
+  ];
+
+  const registrarSubItems = [
+    {
+      id: 'students',
+      label: 'Student Records',
+      icon: FiEdit2,
+      path: '/staff/students',
+      isActive: (p) =>
+        !isNewStudentPage && (p === '/staff/students' || p.startsWith('/staff/students/')),
+    },
+    {
+      id: 'view-records',
+      label: 'View Records',
+      icon: FiSearch,
+      path: '/staff/view-records',
+      isActive: (p) => p.startsWith('/staff/view-records'),
+    },
+  ];
+
+  const navItemsAfterRegistrar = [
     { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/staff/document-release' },
     { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/staff/reports' },
   ];
+
+  const renderNavLink = (item) => {
+    const { id, label, icon: Icon, path } = item;
+    const isActive =
+      !isNewStudentPage &&
+      (pathname === path || (path === '/staff/students' && pathname.startsWith('/staff/students')));
+    return (
+      <Link
+        key={id}
+        to={path}
+        className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left no-underline transition-colors ${
+          isActive ? 'bg-white/25 text-white font-semibold' : 'text-white/95 hover:bg-white/15 hover:text-white'
+        }`}
+        aria-current={isActive ? 'page' : undefined}
+      >
+        <Icon className="w-5 h-5 shrink-0" aria-hidden />
+        <span className="flex-1 flex items-center gap-2">
+          <span>{label}</span>
+          {id === 'requests' && kpi.pendingRequests > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full bg-white text-[#1ac76a] text-xs font-semibold">
+              {kpi.pendingRequests}
+            </span>
+          )}
+        </span>
+        <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
+      </Link>
+    );
+  };
 
   const handleChangePassword = () => setChangePasswordOpen(true);
 
@@ -96,23 +180,64 @@ const StaffLayout = () => {
         </div>
 
         <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5" aria-label="Staff dashboard navigation">
-          {navItems.map(({ id, label, icon: Icon, path }) => {
-            const isActive = !isNewStudentPage && (pathname === path || (path === '/staff/students' && pathname.startsWith('/staff/students')));
-            return (
-              <Link
-                key={id}
-                to={path}
-                className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left no-underline transition-colors ${
-                  isActive ? 'bg-white/25 text-white font-semibold' : 'text-white/95 hover:bg-white/15 hover:text-white'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
+          {navItemsBeforeRegistrar.map(renderNavLink)}
+
+          <div className="mt-0.5">
+            <button
+              type="button"
+              className={`flex items-center gap-3 w-full py-3 px-4 rounded-lg text-[0.95rem] text-left transition-colors text-white/95 hover:bg-white/15 hover:text-white ${
+                isRegistrarRoute ? 'bg-white/20' : ''
+              }`}
+              onClick={() => setRegistrarOpen((o) => !o)}
+              aria-expanded={registrarOpen}
+              aria-controls="staff-registrar-submenu"
+            >
+              <FiClipboard className="w-5 h-5 shrink-0" aria-hidden />
+              <span className="flex-1 font-medium">Registrar</span>
+              {registrarOpen ? (
+                <FiChevronDown className="w-4 h-4 shrink-0 opacity-90" aria-hidden />
+              ) : (
+                <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" aria-hidden />
+              )}
+            </button>
+
+            {registrarOpen && (
+              <div
+                id="staff-registrar-submenu"
+                className="mt-2 mx-1 mb-1 rounded-[10px] bg-white p-4 shadow-[0_4px_14px_rgba(0,0,0,0.12)]"
               >
-                <Icon className="w-5 h-5 shrink-0" aria-hidden />
-                <span className="flex-1">{label}</span>
-                <FiChevronRight className="w-4 h-4 shrink-0 opacity-80" />
-              </Link>
-            );
-          })}
+                <p className="m-0 mb-3 text-[0.65rem] font-semibold tracking-wider text-slate-500 uppercase">
+                  Student Records:
+                </p>
+                <ul className="m-0 p-0 list-none flex flex-col gap-1">
+                  {registrarSubItems.map(({ id, label, icon: SubIcon, path, isActive: isSubActive }) => {
+                    const active = isSubActive(pathname);
+                    return (
+                      <li key={id}>
+                        <Link
+                          to={path}
+                          className={`flex items-center gap-2.5 py-2 px-2 rounded-md text-[0.9rem] no-underline transition-colors ${
+                            active
+                              ? 'text-[#1ac76a] font-semibold bg-green-50/80'
+                              : 'text-gray-800 hover:bg-gray-50'
+                          }`}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          <SubIcon
+                            className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-[#1ac76a]' : 'text-gray-600'}`}
+                            aria-hidden
+                          />
+                          <span>{label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {navItemsAfterRegistrar.map(renderNavLink)}
         </nav>
 
         <div className="p-4 pt-4 border-t border-white/15">
@@ -158,12 +283,22 @@ const StaffLayout = () => {
         <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center rounded-full overflow-hidden">
-              <span className="bg-staff-sy-yellow text-gray-900 px-3 py-1 text-sm font-medium">2025-2026</span>
-              <span className="bg-staff-sy-green text-white px-3 py-1 text-sm font-medium">2nd Semester</span>
+              <span className="bg-staff-sy-yellow text-gray-900 px-3 py-1 text-sm font-medium">
+                {termLoading ? '…' : (term?.academic_year ?? '—')}
+              </span>
+              <span className="bg-staff-sy-green text-white px-3 py-1 text-sm font-medium">
+                {termLoading ? '…' : (term?.semester ?? '—')}
+              </span>
             </span>
             <span className="text-sm text-gray-500 ml-1">Active S.Y.</span>
           </div>
           <div className="flex items-center gap-4">
+            {kpi.pendingRequests > 0 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+                <FiInbox className="w-3 h-3" />
+                <span>Pending: {kpi.pendingRequests}</span>
+              </span>
+            )}
             <span className="text-sm font-medium text-gray-700">{staffName}</span>
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
               <FiUser className="w-4 h-4 text-gray-600" />

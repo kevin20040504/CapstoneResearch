@@ -1,52 +1,29 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUserPlus, FiEye, FiEdit2, FiSearch, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { useQuery } from '@tanstack/react-query';
+import { FiUserPlus, FiEye, FiEdit2, FiSearch, FiChevronUp, FiChevronDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import ViewStudentModal from '../components/ViewStudentModal';
 import { staffApi } from '../lib/api/staffApi';
-
-const mockGetStudentById = (id) =>
-  Promise.resolve({
-    student: {
-      id,
-      student_id: `STU-2024-${String(id).padStart(3, '0')}`,
-      student_number: `STU-2024-${String(id).padStart(3, '0')}`,
-      first_name: 'Student',
-      last_name: `#${id}`,
-      name: `Student #${id}`,
-      email: `student${id}@tmcc.edu.ph`,
-      contact_number: '',
-      address: '',
-      date_of_birth: '2000-01-15',
-      enrollment_date: '2024-08-01',
-      graduation_date: null,
-      GPA: null,
-      course: 'BSIT',
-      status: 'ENROLLED',
-    },
-  });
+import { parseApiError } from '../lib/api/errors';
+import { queryKeys } from '../lib/react-query/queryKeys';
 
 const ENTRIES_OPTIONS = [5, 10, 25, 50];
 
-const sortData = (data, key, dir) => {
-  if (!data.length) return data;
-  const mult = dir === 'asc' ? 1 : -1;
-  return [...data].sort((a, b) => {
-    let va = a[key];
-    let vb = b[key];
-    if (typeof va === 'string') va = (va || '').toLowerCase();
-    if (typeof vb === 'string') vb = (vb || '').toLowerCase();
-    if (va < vb) return -1 * mult;
-    if (va > vb) return 1 * mult;
-    return 0;
-  });
-};
+const SEARCH_DEBOUNCE_MS = 400;
+
+const mapStudentRow = (s) => ({
+  ...s,
+  id: s.student_id,
+  name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.user?.name || '—',
+  course: s.program?.code || s.program?.name || '—',
+  status: 'ENROLLED',
+});
 
 const StaffStudentRecordsPage = () => {
   const navigate = useNavigate();
-  const [students, setStudents] = useState([]);
-  const [studentSearch, setStudentSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [studentFilterCourse, setStudentFilterCourse] = useState('');
-  const [studentFilterStatus, setStudentFilterStatus] = useState('');
   const [studentSortKey, setStudentSortKey] = useState('name');
   const [studentSortDir, setStudentSortDir] = useState('asc');
   const [studentEntries, setStudentEntries] = useState(10);
@@ -54,12 +31,72 @@ const StaffStudentRecordsPage = () => {
   const [viewingStudent, setViewingStudent] = useState(null);
 
   useEffect(() => {
-    setStudents([
-      { id: 1, student_id: 'STU-2024-001', name: 'Juan Dela Cruz', course: 'BSIT', status: 'ENROLLED' },
-      { id: 2, student_id: 'STU-2024-002', name: 'Maria Santos', course: 'BSCE', status: 'ENROLLED' },
-      { id: 3, student_id: 'STU-2024-003', name: 'Pedro Reyes', course: 'BSCS', status: 'ENROLLED' },
-    ]);
-  }, []);
+    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setStudentPage(1);
+  }, [debouncedSearch, studentSortKey, studentSortDir, studentFilterCourse, studentEntries]);
+
+  const listFilters = useMemo(
+    () => ({
+      page: studentPage,
+      perPage: studentEntries,
+      search: debouncedSearch,
+      sort: studentSortKey,
+      dir: studentSortDir,
+      program: studentFilterCourse,
+    }),
+    [studentPage, studentEntries, debouncedSearch, studentSortKey, studentSortDir, studentFilterCourse],
+  );
+
+  const {
+    data: listPayload,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.staff.studentsList(listFilters),
+    queryFn: () =>
+      staffApi.getStudents({
+        page: listFilters.page,
+        per_page: listFilters.perPage,
+        search: listFilters.search || undefined,
+        sort: listFilters.sort,
+        dir: listFilters.dir,
+        program: listFilters.program || undefined,
+      }),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    placeholderData: (previousData) => previousData,
+  });
+
+  const students = useMemo(() => {
+    const raw = listPayload?.data;
+    const list = Array.isArray(raw) ? raw : [];
+    return list.map(mapStudentRow);
+  }, [listPayload]);
+
+  const total = typeof listPayload?.total === 'number' ? listPayload.total : 0;
+  const lastPage = typeof listPayload?.last_page === 'number' ? listPayload.last_page : 1;
+  const from = typeof listPayload?.from === 'number' ? listPayload.from : 0;
+  const to = typeof listPayload?.to === 'number' ? listPayload.to : 0;
+
+  const loadError = isError ? (parseApiError(error).message || 'Failed to load students.') : null;
+
+  const { data: programsPayload } = useQuery({
+    queryKey: queryKeys.staff.programs(),
+    queryFn: () => staffApi.getPrograms(),
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+  });
+
+  const programOptions = useMemo(() => {
+    const list = programsPayload?.programs;
+    return Array.isArray(list) ? list : [];
+  }, [programsPayload]);
 
   const toggleSort = (key) => {
     if (key === studentSortKey) setStudentSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -86,25 +123,10 @@ const StaffStudentRecordsPage = () => {
     </th>
   );
 
-  const studentFiltered = useMemo(() => {
-    let list = students.filter((s) => {
-      const matchSearch = !studentSearch ||
-        (s.name && s.name.toLowerCase().includes(studentSearch.toLowerCase())) ||
-        (s.student_id && s.student_id.toLowerCase().includes(studentSearch.toLowerCase()));
-      const matchCourse = !studentFilterCourse || s.course === studentFilterCourse;
-      const matchStatus = !studentFilterStatus || s.status === studentFilterStatus;
-      return matchSearch && matchCourse && matchStatus;
-    });
-    return sortData(list, studentSortKey, studentSortDir);
-  }, [students, studentSearch, studentFilterCourse, studentFilterStatus, studentSortKey, studentSortDir]);
+  const goPrev = useCallback(() => setStudentPage((p) => Math.max(1, p - 1)), []);
+  const goNext = useCallback(() => setStudentPage((p) => Math.min(lastPage, p + 1)), [lastPage]);
 
-  const studentPaginated = useMemo(() => {
-    const start = (studentPage - 1) * studentEntries;
-    return studentFiltered.slice(start, start + studentEntries);
-  }, [studentFiltered, studentPage, studentEntries]);
-
-  const studentCourses = useMemo(() => [...new Set(students.map((s) => s.course).filter(Boolean))], [students]);
-  const studentStatuses = useMemo(() => [...new Set(students.map((s) => s.status).filter(Boolean))], [students]);
+  const tableLoading = isLoading && !listPayload;
 
   return (
     <>
@@ -114,6 +136,11 @@ const StaffStudentRecordsPage = () => {
           <FiUserPlus /> New Student
         </Link>
       </section>
+      {loadError && (
+        <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
+          {loadError}
+        </div>
+      )}
       <section className=" p-5 bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
         <div className="p-6 pt-0 border-b border-gray-100">
           <div className="flex flex-wrap items-center gap-4">
@@ -122,8 +149,8 @@ const StaffStudentRecordsPage = () => {
               <input
                 type="search"
                 placeholder="Search by name or student ID..."
-                value={studentSearch}
-                onChange={(e) => { setStudentSearch(e.target.value); setStudentPage(1); }}
+                value={searchInput}
+                onChange={(e) => { setSearchInput(e.target.value); setStudentPage(1); }}
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
                 aria-label="Search students"
               />
@@ -135,20 +162,13 @@ const StaffStudentRecordsPage = () => {
               aria-label="Filter by course"
             >
               <option value="">All courses</option>
-              {studentCourses.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <select
-              value={studentFilterStatus}
-              onChange={(e) => { setStudentFilterStatus(e.target.value); setStudentPage(1); }}
-              className="py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc"
-              aria-label="Filter by status"
-            >
-              <option value="">All statuses</option>
-              {studentStatuses.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+              {programOptions.map((p) => {
+                const value = p.code || p.name;
+                const label = [p.code, p.name].filter(Boolean).join(' — ') || value;
+                return (
+                  <option key={p.id} value={value}>{label}</option>
+                );
+              })}
             </select>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Show</span>
@@ -177,10 +197,12 @@ const StaffStudentRecordsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {studentPaginated.length > 0 ? (
-                studentPaginated.map((student) => (
-                  <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50/80">
-                    <td className="py-3 px-4 text-gray-800">{student.student_id}</td>
+              {tableLoading ? (
+                <tr><td colSpan={5} className="py-8 px-4 text-center text-gray-500">Loading students...</td></tr>
+              ) : students.length > 0 ? (
+                students.map((student) => (
+                  <tr key={student.student_id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                    <td className="py-3 px-4 text-gray-800">{student.student_number ?? student.student_id}</td>
                     <td className="py-3 px-4 text-gray-800">{student.name}</td>
                     <td className="py-3 px-4 text-gray-700">{student.course}</td>
                     <td className="py-3 px-4">
@@ -198,7 +220,7 @@ const StaffStudentRecordsPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => navigate(`/staff/students/${student.id}/edit`, { state: { student } })}
+                          onClick={() => navigate(`/staff/students/${student.student_id}/edit`, { state: { student } })}
                           className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-amber-600 text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-colors"
                           aria-label={`Edit ${student.name}`}
                         >
@@ -214,9 +236,33 @@ const StaffStudentRecordsPage = () => {
             </tbody>
           </table>
         </div>
-        {studentFiltered.length > 0 && (
-          <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
-            Showing {((studentPage - 1) * studentEntries) + 1} to {Math.min(studentPage * studentEntries, studentFiltered.length)} of {studentFiltered.length} entries
+        {total > 0 && (
+          <div className="px-6 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
+            <span>
+              Showing {from} to {to} of {total} entries
+              {isFetching && !tableLoading ? <span className="ml-2 text-gray-400">(updating…)</span> : null}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={goPrev}
+                disabled={studentPage <= 1 || tableLoading}
+                className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FiChevronLeft className="w-4 h-4" /> Previous
+              </button>
+              <span className="text-gray-600">
+                Page {listPayload?.current_page ?? studentPage} of {lastPage}
+              </span>
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={studentPage >= lastPage || tableLoading}
+                className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next <FiChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </section>
@@ -225,11 +271,11 @@ const StaffStudentRecordsPage = () => {
         isOpen={!!viewingStudent}
         onClose={() => setViewingStudent(null)}
         student={viewingStudent}
-        studentId={viewingStudent?.id}
-        onFetchStudent={(id) => staffApi.getStudentById(id).catch(() => mockGetStudentById(id))}
+        studentId={viewingStudent?.student_id}
+        onFetchStudent={(id) => staffApi.getStudentById(id)}
         onEdit={(s) => {
           setViewingStudent(null);
-          navigate(`/staff/students/${s.id ?? s.student_id}/edit`, { state: { student: s } });
+          navigate(`/staff/students/${s.student_id ?? s.id}/edit`, { state: { student: s } });
         }}
       />
     </>

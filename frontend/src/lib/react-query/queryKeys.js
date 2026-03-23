@@ -3,11 +3,22 @@ export const queryKeys = {
     all: ['auth'],
     user: () => [...queryKeys.auth.all, 'user'],
   },
+  settings: {
+    all: ['settings'],
+    currentTerm: () => [...queryKeys.settings.all, 'currentTerm'],
+  },
+  admin: {
+    all: ['admin'],
+    usersList: (filters) => [...queryKeys.admin.all, 'users', filters],
+    settings: () => [...queryKeys.admin.all, 'systemSettings'],
+  },
   staff: {
     all: ['staff'],
     pendingRequests: () => [...queryKeys.staff.all, 'pending-requests'],
     approvedForRelease: () => [...queryKeys.staff.all, 'approved-release'],
-    students: (search) => [...queryKeys.staff.all, 'students', search ?? ''],
+    studentsList: (filters) => [...queryKeys.staff.all, 'students', filters],
+    studentDetail: (id) => [...queryKeys.staff.all, 'student', id],
+    programs: () => [...queryKeys.staff.all, 'programs'],
     reports: () => [...queryKeys.staff.all, 'reports'],
   },
 };

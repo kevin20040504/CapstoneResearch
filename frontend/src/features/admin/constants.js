@@ -1,0 +1,9 @@
+export const ADMIN_USERS_SEARCH_DEBOUNCE_MS = 400;
+
+export const ADMIN_USERS_DEFAULT_PER_PAGE = 10;
+
+export const ADMIN_USERS_PER_PAGE_OPTIONS = [5, 10, 25, 50];
+
+export const ADMIN_USERS_LIST_STALE_MS = 60_000;
+
+export const ADMIN_USERS_LIST_GC_MS = 10 * 60_000;

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
@@ -15,13 +17,25 @@ class Student extends Model
 
     protected $fillable = [
         'user_id',
+        'program_id',
         'student_number',
         'first_name',
+        'middle_name',
         'last_name',
         'date_of_birth',
         'email',
         'contact_number',
         'address',
+        'place_of_birth',
+        'sex',
+        'guardian_name',
+        'citizenship',
+        'elementary_school',
+        'elementary_year',
+        'high_school',
+        'high_school_year',
+        'previous_school',
+        'previous_course',
         'enrollment_date',
         'graduation_date',
         'GPA',
@@ -31,11 +45,33 @@ class Student extends Model
         'date_of_birth' => 'date',
         'enrollment_date' => 'date',
         'graduation_date' => 'date',
+        'elementary_year' => 'integer',
+        'high_school_year' => 'integer',
         'GPA' => 'decimal:2',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class, 'student_id', 'student_id');
+    }
+
+    public function grades(): HasMany
+    {
+        return $this->hasMany(Grade::class, 'student_id', 'student_id');
+    }
+
+    public function recordRequests(): HasMany
+    {
+        return $this->hasMany(RecordRequest::class, 'student_id', 'student_id');
     }
 }

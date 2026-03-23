@@ -172,7 +172,7 @@ const ViewStudentModalContent = ({ student, studentId, onFetchStudent, onClose, 
                 { label: 'Enrollment Date', value: formatDate(displayStudent.enrollment_date) },
                 { label: 'Graduation Date', value: formatDate(displayStudent.graduation_date) },
                 { label: 'GPA', value: formatGPA(displayStudent.GPA) },
-                ...(displayStudent.course ? [{ label: 'Course', value: displayStudent.course }] : []),
+                { label: 'Program', value: displayStudent.program?.name || displayStudent.program?.code || displayStudent.course || '—' },
                 ...(displayStudent.status ? [{ label: 'Status', value: displayStudent.status }] : []),
               ]}
             />
