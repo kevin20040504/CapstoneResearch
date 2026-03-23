@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import { adminToast } from '../../lib/notifications';
+import { parseApiError } from '../../lib/api/errors';
+import { adminApi } from '../../lib/api/adminApi';
 
 const ROLES = [
   { value: 'student', label: 'Student' },
@@ -48,11 +50,31 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }) => {
     setErrors({});
     if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setLoading(false);
-    onClose();
-    adminToast.success('User updated', `${form.name} has been updated successfully.`);
-    onSuccess?.();
+    try {
+      await adminApi.updateUser(user.id, {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        role: form.role,
+        department: ['staff', 'admin'].includes(form.role) ? form.department?.trim() || null : null,
+        status: form.status,
+      });
+      onClose();
+      adminToast.success('User updated', `${form.name} has been updated successfully.`);
+      onSuccess?.();
+    } catch (err) {
+      const parsed = parseApiError(err);
+      if (parsed.errors) {
+        const next = {};
+        Object.entries(parsed.errors).forEach(([k, msgs]) => {
+          next[k] = Array.isArray(msgs) ? msgs[0] : String(msgs);
+        });
+        setErrors(next);
+      } else {
+        adminToast.error('Could not update user', parsed.message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputBase = 'w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';

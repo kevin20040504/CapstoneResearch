@@ -3,6 +3,10 @@ export const queryKeys = {
     all: ['auth'],
     user: () => [...queryKeys.auth.all, 'user'],
   },
+  admin: {
+    all: ['admin'],
+    usersList: (filters) => [...queryKeys.admin.all, 'users', filters],
+  },
   staff: {
     all: ['staff'],
     pendingRequests: () => [...queryKeys.staff.all, 'pending-requests'],

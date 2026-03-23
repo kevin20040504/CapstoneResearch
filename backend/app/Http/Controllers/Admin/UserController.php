@@ -31,6 +31,8 @@ class UserController extends Controller
         $query = User::query()
             ->select(['id', 'name', 'username', 'email', 'role', 'department', 'status', 'created_at', 'updated_at']);
 
+        $query->whereIn('role', ['admin', 'staff']);
+
         if ($search = $request->input('search')) {
             $search = preg_replace('/\s+/', ' ', trim($search));
             $query->where(function ($q) use ($search) {
@@ -41,10 +43,14 @@ class UserController extends Controller
         }
 
         if ($role = $request->input('role')) {
-            $query->where('role', $role);
+            if (in_array($role, ['admin', 'staff'], true)) {
+                $query->where('role', $role);
+            }
         }
 
+        $allowedSort = ['name', 'username', 'email', 'role', 'status', 'department', 'created_at'];
         $sortKey = $request->input('sort', 'name');
+        $sortKey = in_array($sortKey, $allowedSort, true) ? $sortKey : 'name';
         $sortDir = $request->input('dir', 'asc') === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortKey, $sortDir);
 

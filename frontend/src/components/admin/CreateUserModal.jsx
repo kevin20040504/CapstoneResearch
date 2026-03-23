@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import { adminToast } from '../../lib/notifications';
+import { parseApiError } from '../../lib/api/errors';
+import { adminApi } from '../../lib/api/adminApi';
 
 const ROLES = [
   { value: 'student', label: 'Student' },
@@ -41,12 +43,34 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
     if (!validate()) return;
     setLoading(true);
     const createdName = form.name;
-    await new Promise((r) => setTimeout(r, 500));
-    setLoading(false);
-    onClose();
-    setForm({ name: '', username: '', email: '', password: '', role: 'staff', department: '' });
-    adminToast.success('User created', `${createdName} has been added successfully.`);
-    onSuccess?.();
+    try {
+      await adminApi.createUser({
+        name: form.name.trim(),
+        username: form.username.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        password_confirmation: form.password,
+        role: form.role,
+        department: ['staff', 'admin'].includes(form.role) ? form.department?.trim() || null : null,
+      });
+      onClose();
+      setForm({ name: '', username: '', email: '', password: '', role: 'staff', department: '' });
+      adminToast.success('User created', `${createdName} has been added successfully.`);
+      onSuccess?.();
+    } catch (err) {
+      const parsed = parseApiError(err);
+      if (parsed.errors) {
+        const next = {};
+        Object.entries(parsed.errors).forEach(([k, msgs]) => {
+          next[k] = Array.isArray(msgs) ? msgs[0] : String(msgs);
+        });
+        setErrors(next);
+      } else {
+        adminToast.error('Could not create user', parsed.message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputBase = 'w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';
