@@ -6,3 +6,4 @@ export { dashboardApi } from './dashboardApi';
 export { staffApi } from './staffApi';
 export { studentApi } from './studentApi';
 export { adminApi } from './adminApi';
+export { settingsApi } from './settingsApi';

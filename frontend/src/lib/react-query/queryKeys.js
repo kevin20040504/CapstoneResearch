@@ -3,9 +3,14 @@ export const queryKeys = {
     all: ['auth'],
     user: () => [...queryKeys.auth.all, 'user'],
   },
+  settings: {
+    all: ['settings'],
+    currentTerm: () => [...queryKeys.settings.all, 'currentTerm'],
+  },
   admin: {
     all: ['admin'],
     usersList: (filters) => [...queryKeys.admin.all, 'users', filters],
+    settings: () => [...queryKeys.admin.all, 'systemSettings'],
   },
   staff: {
     all: ['staff'],

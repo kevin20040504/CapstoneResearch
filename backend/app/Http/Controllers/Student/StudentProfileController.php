@@ -38,7 +38,7 @@ class StudentProfileController extends Controller
 
         $student->load('program');
         $academicYear = SystemSetting::getValue('academic_year') ?: date('Y') . '-' . (date('Y') + 1);
-        $semester = SystemSetting::getValue('semester') ?: '2nd';
+        $semester = SystemSetting::getValue('semester') ?: '2nd Semester';
 
         return response()->json([
             'student' => $student,
@@ -72,7 +72,7 @@ class StudentProfileController extends Controller
         }
 
         $academicYear = $request->input('academic_year') ?: (SystemSetting::getValue('academic_year') ?: date('Y') . '-' . (date('Y') + 1));
-        $semester = $request->input('semester') ?: (SystemSetting::getValue('semester') ?: '2nd');
+        $semester = $request->input('semester') ?: (SystemSetting::getValue('semester') ?: '2nd Semester');
 
         $enrollments = $student->enrollments()
             ->with('subject')

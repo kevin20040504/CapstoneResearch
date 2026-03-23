@@ -37,6 +37,10 @@ Route::get('/user', function (Request $request) {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware('auth:sanctum');
 
+// ---- System settings: current term (read-only; staff, admin, student) ----
+Route::get('/settings/current', [SystemSettingsController::class, 'current'])
+    ->middleware(['auth:sanctum', 'role:staff,admin,student']);
+
 // ---- Staff & Admin: Students ----
 Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(function () {
     Route::get('/subjects', [StudentController::class, 'subjects']);

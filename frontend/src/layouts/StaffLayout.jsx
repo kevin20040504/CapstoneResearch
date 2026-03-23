@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
 import { dashboardApi } from '../lib/api/dashboardApi';
+import { useCurrentTermQuery } from '../hooks/useCurrentTermQuery';
 
 const StaffLayout = () => {
   const { user, role, logout, logoutMutation } = useAuth();
@@ -34,6 +35,8 @@ const StaffLayout = () => {
     studentsCount: 0,
     documentsReleased: 0,
   });
+
+  const { data: term, isLoading: termLoading } = useCurrentTermQuery();
 
   const fetchKpis = useCallback(() => {
     dashboardApi.getDashboard().then((res) => {
@@ -280,8 +283,12 @@ const StaffLayout = () => {
         <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center rounded-full overflow-hidden">
-              <span className="bg-staff-sy-yellow text-gray-900 px-3 py-1 text-sm font-medium">2025-2026</span>
-              <span className="bg-staff-sy-green text-white px-3 py-1 text-sm font-medium">2nd Semester</span>
+              <span className="bg-staff-sy-yellow text-gray-900 px-3 py-1 text-sm font-medium">
+                {termLoading ? '…' : (term?.academic_year ?? '—')}
+              </span>
+              <span className="bg-staff-sy-green text-white px-3 py-1 text-sm font-medium">
+                {termLoading ? '…' : (term?.semester ?? '—')}
+              </span>
             </span>
             <span className="text-sm text-gray-500 ml-1">Active S.Y.</span>
           </div>

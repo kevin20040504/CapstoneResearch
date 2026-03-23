@@ -42,6 +42,16 @@ const StudentLayout = () => {
       .finally(() => setProfileLoading(false));
   }, []);
 
+  useEffect(() => {
+    const onSettingsUpdated = () => {
+      studentApi.getProfile()
+        .then((data) => setProfile(data))
+        .catch(() => {});
+    };
+    window.addEventListener('system-settings-updated', onSettingsUpdated);
+    return () => window.removeEventListener('system-settings-updated', onSettingsUpdated);
+  }, []);
+
   const handleSignOut = () => logout();
   const handleChangePassword = () => setChangePasswordOpen(true);
 

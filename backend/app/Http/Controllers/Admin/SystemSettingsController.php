@@ -54,6 +54,30 @@ class SystemSettingsController extends Controller
     }
 
     /**
+     * Current term labels for headers (staff, admin, student).
+     */
+    public function current(Request $request): JsonResponse
+    {
+        if ($err = $this->requireAuth()) {
+            return $err;
+        }
+        if ($err = $this->requireRoles($request->user(), ['admin', 'staff', 'student'])) {
+            return $err;
+        }
+
+        $y = (int) date('Y');
+        $academicYear = SystemSetting::getValue('academic_year') ?: $y.'-'.($y + 1);
+        $semester = SystemSetting::getValue('semester') ?: '2nd Semester';
+        $institutionName = SystemSetting::getValue('institution_name') ?: 'Trece Martires City College';
+
+        return response()->json([
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+            'institution_name' => $institutionName,
+        ]);
+    }
+
+    /**
      * Update system settings (admin only).
      */
     public function update(UpdateSystemSettingsRequest $request): JsonResponse
