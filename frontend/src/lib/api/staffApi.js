@@ -78,6 +78,14 @@ export const staffApi = {
     return data;
   },
 
+  /** Official transcript XLSX for a student (staff/admin). */
+  downloadStudentTranscript: async (studentId) => {
+    const response = await apiClient.get(`/staff/students/${studentId}/transcript`, {
+      responseType: 'blob',
+    });
+    return response;
+  },
+
   getReportsSummary: async () => {
     const { data } = await apiClient.get('/staff/reports/summary');
     return data;

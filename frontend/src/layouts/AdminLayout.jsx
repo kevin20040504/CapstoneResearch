@@ -13,6 +13,7 @@ import {
   FiCheckCircle,
   FiSettings,
   FiUserPlus,
+  FiEye,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
@@ -66,6 +67,7 @@ const AdminLayout = () => {
     { id: 'users', label: 'User Management', icon: FiUserPlus, path: '/admin/users' },
     { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/admin/requests' },
     { id: 'students', label: 'Student Records', icon: FiUsers, path: '/admin/students' },
+    { id: 'view-records', label: 'View Records', icon: FiEye, path: '/admin/view-records' },
     { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/admin/document-release' },
     { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/admin/reports' },
     { id: 'settings', label: 'System Settings', icon: FiSettings, path: '/admin/settings' },

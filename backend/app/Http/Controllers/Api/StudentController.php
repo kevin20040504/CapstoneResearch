@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Services\OfficialTranscriptExportService;
 use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\Program;
@@ -15,6 +16,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentController extends Controller
 {
@@ -148,6 +150,34 @@ class StudentController extends Controller
         }
 
         return response()->json(['student' => $student]);
+    }
+
+    /**
+     * Download official transcript XLSX for a student (staff/admin only).
+     */
+    public function downloadTranscript(int $id): StreamedResponse|JsonResponse
+    {
+        $user = request()->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $role = $user->roles->first()?->name ?? $user->role ?? null;
+        if (! in_array($role, ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Forbidden. Staff or Admin only.'], 403);
+        }
+
+        $student = Student::with(['program', 'grades.subject'])->find($id);
+        if (! $student) {
+            return response()->json(['message' => 'Student not found.'], 404);
+        }
+
+        $templatePath = public_path('assets/templates/OFFICIAL TRANSCRIPT OF RECORD - template.xlsx');
+        if (! file_exists($templatePath)) {
+            return response()->json(['message' => 'Transcript template file not found.'], 500);
+        }
+
+        return app(OfficialTranscriptExportService::class)->streamForStudent($student);
     }
 
     /**

@@ -12,6 +12,7 @@ import {
   FiGrid,
   FiCheckCircle,
   FiShield,
+  FiEye,
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
@@ -85,6 +86,7 @@ const StaffLayout = () => {
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/staff' },
     { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/staff/requests' },
     { id: 'students', label: 'Student Records', icon: FiUsers, path: '/staff/students' },
+    { id: 'view-records', label: 'View Records', icon: FiEye, path: '/staff/view-records' },
     { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/staff/document-release' },
     { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/staff/reports' },
   ];
@@ -118,7 +120,9 @@ const StaffLayout = () => {
 
         <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5" aria-label="Staff dashboard navigation">
           {navItems.map(({ id, label, icon: Icon, path }) => {
-            const isActive = !isNewStudentPage && (pathname === path || (path === '/staff/students' && pathname.startsWith('/staff/students')));
+            const isActive =
+              !isNewStudentPage &&
+              (pathname === path || (path === '/staff/students' && pathname.startsWith('/staff/students')));
             return (
               <Link
                 key={id}

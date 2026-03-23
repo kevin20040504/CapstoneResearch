@@ -24,6 +24,7 @@ import StaffDocumentReleasePage from '../pages/StaffDocumentReleasePage';
 import StaffReportsPage from '../pages/StaffReportsPage';
 import StaffNewStudentPage from '../pages/StaffNewStudentPage';
 import StaffEditStudentPage from '../pages/StaffEditStudentPage';
+import ViewRecordsPage from '../pages/ViewRecordsPage';
 import StudentLayout from '../layouts/StudentLayout';
 import StudentRequestRecordPage from '../pages/StudentRequestRecordPage';
 import StudentSignup from '../pages/StudentSignup';
@@ -113,6 +114,7 @@ const router = createBrowserRouter([
           { index: true, element: <StaffDashboardPage /> },
           { path: 'requests', element: <StaffPendingRequestsPage /> },
           { path: 'students', element: <StaffStudentRecordsPage /> },
+          { path: 'view-records', element: <ViewRecordsPage /> },
           { path: 'students/new', element: <StaffNewStudentPage /> },
           { path: 'students/:id/edit', element: <StaffEditStudentPage /> },
           { path: 'document-release', element: <StaffDocumentReleasePage /> },
@@ -131,6 +133,7 @@ const router = createBrowserRouter([
           { path: 'users', element: <AdminUserManagementPage /> },
           { path: 'requests', element: <AdminPendingRequestsPage /> },
           { path: 'students', element: <AdminStudentRecordsPage /> },
+          { path: 'view-records', element: <ViewRecordsPage /> },
           { path: 'students/new', element: <AdminNewStudentPage /> },
           { path: 'students/:id/edit', element: <AdminEditStudentPage /> },
           { path: 'document-release', element: <AdminDocumentReleasePage /> },
