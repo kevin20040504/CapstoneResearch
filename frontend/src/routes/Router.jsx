@@ -30,6 +30,7 @@ import StudentRequestRecordPage from '../pages/StudentRequestRecordPage';
 import StudentSISPage from '../pages/StudentSISPage';
 import { AuthProvider, useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 import { queryClient } from '../lib/react-query/queryClient';
+import AdminSystemLogsPage from '../pages/admin/AdminSystemLogsPage';
 
 function RootLayout() {
   const location = useLocation();
@@ -137,6 +138,7 @@ const router = createBrowserRouter([
           { path: 'document-release', element: <AdminDocumentReleasePage /> },
           { path: 'reports', element: <AdminReportsPage /> },
           { path: 'settings', element: <AdminSystemSettingsPage /> },
+          { path: 'logs', element: <AdminSystemLogsPage /> },
         ],
       },
       {

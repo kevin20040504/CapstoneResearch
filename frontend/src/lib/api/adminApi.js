@@ -47,4 +47,10 @@ export const adminApi = {
     const { data } = await apiClient.get('/admin/reports/export', { params });
     return data;
   },
+
+  // ---- System logs ----
+  getSystemLogs: async (params = {}) => {
+    const { data } = await apiClient.get('/admin/logs', { params });
+    return data;
+  },
 };

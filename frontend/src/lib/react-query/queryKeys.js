@@ -11,6 +11,8 @@ export const queryKeys = {
     all: ['admin'],
     usersList: (filters) => [...queryKeys.admin.all, 'users', filters],
     settings: () => [...queryKeys.admin.all, 'systemSettings'],
+    logs: () => [...queryKeys.admin.all, 'systemLogs'],
+    logsList: (filters) => [...queryKeys.admin.all, 'systemLogs', filters],
   },
   staff: {
     all: ['staff'],

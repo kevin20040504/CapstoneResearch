@@ -8,15 +8,12 @@ import {
   FiLogOut,
   FiPackage,
   FiChevronRight,
-  FiChevronDown,
   FiUser,
   FiGrid,
   FiCheckCircle,
   FiSettings,
   FiUserPlus,
-  FiClipboard,
-  FiEdit2,
-  FiSearch,
+  FiClock
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
@@ -84,6 +81,7 @@ const AdminLayout = () => {
   const navItemsAfterRegistrar = [
     { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/admin/reports' },
     { id: 'settings', label: 'System Settings', icon: FiSettings, path: '/admin/settings' },
+    { id: 'logs', label: 'System Logs', icon: FiClock, path: '/admin/logs' },
   ];
 
   const renderNavLink = (item) => {
