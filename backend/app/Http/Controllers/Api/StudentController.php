@@ -12,6 +12,7 @@ use App\Models\Grade;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\SystemLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -118,7 +119,11 @@ class StudentController extends Controller
 
             return Student::create($studentData);
         });
-
+        SystemLog::create([
+            'action' => 'Student created',
+            'user_id' => $user->id,
+            'role' => $role,
+        ]);
         return response()->json([
             'message' => 'Student and account created successfully.',
             'student' => $student,
@@ -220,7 +225,11 @@ class StudentController extends Controller
         });
 
         $student->refresh();
-
+        SystemLog::create([
+            'action' => 'Student updated',
+            'user_id' => $user->id,
+            'role' => $role,
+        ]);
         return response()->json([
             'message' => 'Student updated successfully.',
             'student' => $student,
@@ -295,6 +304,11 @@ class StudentController extends Controller
         }
         $enrollment = Enrollment::create($validated);
         $enrollment->load('subject');
+        SystemLog::create([
+            'action' => 'Enrollment added',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json(['message' => 'Enrollment added.', 'enrollment' => $enrollment], 201);
     }
 
@@ -320,6 +334,11 @@ class StudentController extends Controller
         ]);
         $enrollment->update($validated);
         $enrollment->load('subject');
+        SystemLog::create([
+            'action' => 'Enrollment updated',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json(['message' => 'Enrollment updated.', 'enrollment' => $enrollment]);
     }
 
@@ -339,6 +358,11 @@ class StudentController extends Controller
             return response()->json(['message' => 'Enrollment not found.'], 404);
         }
         $enrollment->delete();
+        SystemLog::create([
+            'action' => 'Enrollment removed',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json(['message' => 'Enrollment removed.']);
     }
 
@@ -382,6 +406,11 @@ class StudentController extends Controller
         }
         $grade = Grade::create($validated);
         $grade->load('subject');
+        SystemLog::create([
+            'action' => 'Grade added',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json(['message' => 'Grade added.', 'grade' => $grade], 201);
     }
 
@@ -411,6 +440,11 @@ class StudentController extends Controller
         }
         $grade->update($validated);
         $grade->load('subject');
+        SystemLog::create([
+            'action' => 'Grade updated',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json(['message' => 'Grade updated.', 'grade' => $grade]);
     }
 
@@ -430,6 +464,11 @@ class StudentController extends Controller
             return response()->json(['message' => 'Grade not found.'], 404);
         }
         $grade->delete();
+        SystemLog::create([
+            'action' => 'Grade removed',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json(['message' => 'Grade removed.']);
     }
 }
