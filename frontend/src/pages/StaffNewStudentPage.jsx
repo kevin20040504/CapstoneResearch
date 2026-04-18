@@ -19,9 +19,14 @@ const defaultForm = {
   enrollment_date: new Date().toISOString().slice(0, 10),
   graduation_date: '',
   GPA: '',
+  record_type: '',
+  cabinet_no: '',
+  shelf_no: '',
+  folder_code: '',
+  document_status: '',
 };
 
-const TOTAL_PHASES = 3;
+const TOTAL_PHASES = 4;
 
 const StaffNewStudentPage = ({ basePath = '/staff' }) => {
   const navigate = useNavigate();
@@ -107,6 +112,11 @@ const StaffNewStudentPage = ({ basePath = '/staff' }) => {
         enrollment_date: form.enrollment_date,
         graduation_date: form.graduation_date || null,
         GPA: form.GPA !== '' ? parseFloat(form.GPA) : null,
+        record_type: form.record_type?.trim() || null,
+        cabinet_no: form.cabinet_no?.trim() || null,
+        shelf_no: form.shelf_no?.trim() || null,
+        folder_code: form.folder_code?.trim() || null,
+        document_status: form.document_status?.trim() || null,
       };
       const res = await staffApi.createStudent(payload);
       queryClient.invalidateQueries({ queryKey: [...queryKeys.staff.all, 'students'] });
@@ -179,7 +189,7 @@ const StaffNewStudentPage = ({ basePath = '/staff' }) => {
 
           {/* Phase stepper */}
           <div className="flex items-center justify-center gap-0 py-4 mb-6 bg-gray-50 rounded-lg" aria-label="Form phases">
-            {[1, 2, 3].map((phase) => (
+            {[1, 2, 3, 4].map((phase) => (
               <div key={phase} className="flex items-center gap-2">
                 <span
                   className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
@@ -191,7 +201,7 @@ const StaffNewStudentPage = ({ basePath = '/staff' }) => {
                 <span className={`text-sm mr-2 ${currentPhase === phase ? 'text-tmcc font-semibold' : 'text-gray-600'}`}>
                   Phase {phase}
                 </span>
-                {phase < 3 && <span className={`w-10 h-0.5 mx-1 ${currentPhase > phase ? 'bg-tmcc' : 'bg-gray-200'}`} />}
+                {phase < 4 && <span className={`w-10 h-0.5 mx-1 ${currentPhase > phase ? 'bg-tmcc' : 'bg-gray-200'}`} />}
               </div>
             ))}
           </div>
@@ -283,6 +293,106 @@ const StaffNewStudentPage = ({ basePath = '/staff' }) => {
                   <input id="GPA" name="GPA" type="number" step="0.01" min="0" max="5" value={form.GPA} onChange={handleChange} placeholder="0.00–5.00" className={`${inputBase} ${errors.GPA ? inputError : inputNormal}`} aria-invalid={!!errors.GPA} />
                   {errors.GPA && <span className="text-xs text-red-600">{errors.GPA}</span>}
                 </div>
+              </div>
+            </div>
+          )}
+
+
+          {currentPhase === 4 && ( 
+            <div className="mb-8 p-6 bg-white rounded-xl border-l-4 border-tmcc shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100">
+              
+              <h4 className="flex items-center gap-3 m-0 mb-5 pb-3 text-base font-semibold text-gray-800 border-b-2 border-gray-200">
+                <span className="inline-flex items-center justify-center min-w-[4.5rem] py-1.5 px-3 bg-tmcc text-white text-sm font-bold rounded-md tracking-wide">
+                  Phase 4
+                </span>
+               Meta Data
+              </h4>
+
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+
+                {/* Record Type */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="record_type" className="text-sm font-medium text-gray-600">
+                    Record Type
+                  </label>
+                  <input
+                    id="record_type"
+                    name="record_type"
+                    type="text"
+                    value={form.record_type}
+                    onChange={handleChange}
+                    placeholder="e.g. Student File"
+                    className={`${inputBase} ${inputNormal}`}
+                  />
+                </div>
+
+                {/* Cabinet No */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="cabinet_no" className="text-sm font-medium text-gray-600">
+                    Cabinet No
+                  </label>
+                  <input
+                    id="cabinet_no"
+                    name="cabinet_no"
+                    type="text"
+                    value={form.cabinet_no}
+                    onChange={handleChange}
+                    placeholder="e.g. CAB-01"
+                    className={`${inputBase} ${inputNormal}`}
+                  />
+                </div>
+
+                {/* Shelf No */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="shelf_no" className="text-sm font-medium text-gray-600">
+                    Shelf No
+                  </label>
+                  <input
+                    id="shelf_no"
+                    name="shelf_no"
+                    type="text"
+                    value={form.shelf_no}
+                    onChange={handleChange}
+                    placeholder="e.g. SH-02"
+                    className={`${inputBase} ${inputNormal}`}
+                  />
+                </div>
+
+                {/* Folder Code */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="folder_code" className="text-sm font-medium text-gray-600">
+                    Folder Code
+                  </label>
+                  <input
+                    id="folder_code"
+                    name="folder_code"
+                    type="text"
+                    value={form.folder_code}
+                    onChange={handleChange}
+                    placeholder="e.g. F-2024-001"
+                    className={`${inputBase} ${inputNormal}`}
+                  />
+                </div>
+
+                {/* Document Status */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="document_status" className="text-sm font-medium text-gray-600">
+                    Document Status
+                  </label>
+                  <select
+                    id="document_status"
+                    name="document_status"
+                    value={form.document_status}
+                    onChange={handleChange}
+                    className={`${inputBase} ${inputNormal}`}
+                  >
+                    <option value="">Select Status</option>
+                    <option value="complete">Complete</option>
+                    <option value="pending">Pending</option>
+                    <option value="missing">Missing</option>
+                  </select>
+                </div>
+
               </div>
             </div>
           )}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Models\ArchiveRecord;
 use App\Services\OfficialTranscriptExportService;
 use App\Models\Enrollment;
 use App\Models\Grade;
@@ -17,6 +18,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentController extends Controller
@@ -87,7 +89,8 @@ class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
         if (! $user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
@@ -119,6 +122,21 @@ class StudentController extends Controller
 
             return Student::create($studentData);
         });
+
+        // create archive record
+        $archiveRecord = ArchiveRecord::create([
+            'student_id' => $student->student_id,
+            'record_type' => $validated['record_type'],
+            'cabinet_no' => $validated['cabinet_no'],
+            'shelf_no' => $validated['shelf_no'],
+            'folder_code' => $validated['folder_code'],
+            'document_status' => $validated['document_status'],
+        ]);
+
+        if (!$archiveRecord) {
+            return response()->json(['message' => 'Failed to create archive record.'], 500);
+        }
+
         SystemLog::create([
             'action' => 'Student created',
             'user_id' => $user->id,
@@ -132,6 +150,10 @@ class StudentController extends Controller
                 'password' => self::DEFAULT_STUDENT_PASSWORD,
             ],
         ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create student and account: ' . $e->getMessage());
+           return response()->json(['message' => 'Failed to create student and account.'], 500);
+        }
     }
 
     /**
