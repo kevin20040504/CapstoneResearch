@@ -66,7 +66,11 @@ class RecordRequestController extends Controller
         $validated['copies'] = $validated['copies'] ?? 1;
 
         $recordRequest = RecordRequest::create($validated);
-
+        SystemLog::create([
+            'action' => 'Record request submitted',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json([
             'message' => 'Record request submitted successfully.',
             'record_request' => $recordRequest,

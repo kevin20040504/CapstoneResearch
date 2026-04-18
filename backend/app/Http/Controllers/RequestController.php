@@ -7,6 +7,7 @@ use App\Http\Requests\RejectRecordRequestRequest;
 use App\Models\RecordRequest;
 use App\Models\RecordTransaction;
 use App\Models\Staff;
+use App\Models\SystemLog;
 use App\Services\OfficialTranscriptExportService;
 use App\Services\StaffService;
 use Carbon\Carbon;
@@ -100,7 +101,11 @@ class RequestController extends Controller
         if (! $staff) {
             return response()->json(['message' => 'Staff record not available.'], 403);
         }
-
+        SystemLog::create([
+            'action' => 'Request approved',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         $validated = $request->validate([
             'appointment_at' => ['required', 'date'],
         ]);
@@ -164,7 +169,11 @@ class RequestController extends Controller
         if (! $staff) {
             return response()->json(['message' => 'Staff record not available.'], 403);
         }
-
+        SystemLog::create([
+            'action' => 'Request rejected',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         $recordRequest->update([
             'status' => RecordRequest::STATUS_REJECTED,
             'processed_by' => $staff->staff_id,
@@ -205,7 +214,11 @@ class RequestController extends Controller
             $req->setAttribute('student_name', $s ? trim($s->first_name . ' ' . $s->last_name) : null);
             return $req;
         });
-
+        SystemLog::create([
+            'action' => 'Approved requests listed',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json($items);
     }
 
@@ -250,7 +263,11 @@ class RequestController extends Controller
             $req->setAttribute('student_name', $s ? trim($s->first_name . ' ' . $s->last_name) : null);
             return $req;
         });
-
+        SystemLog::create([
+            'action' => 'Rejected requests listed',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json($items);
     }
 
@@ -275,7 +292,11 @@ class RequestController extends Controller
         if (! $staff) {
             return response()->json(['message' => 'Staff record not available.'], 403);
         }
-
+        SystemLog::create([
+            'action' => 'Document released',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return $this->doRelease($recordRequest, $staff);
     }
 
@@ -305,7 +326,11 @@ class RequestController extends Controller
         if (! $staff) {
             return response()->json(['message' => 'Staff record not available.'], 403);
         }
-
+        SystemLog::create([
+            'action' => 'Transaction created',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return $this->doRelease($recordRequest, $staff);
     }
 
@@ -388,7 +413,11 @@ class RequestController extends Controller
         if (! file_exists($templatePath)) {
             return response()->json(['message' => 'Transcript template file not found.'], 500);
         }
-
+        SystemLog::create([
+            'action' => 'Transcript template downloaded',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return app(OfficialTranscriptExportService::class)->streamForStudent($student);
     }
 
@@ -409,6 +438,11 @@ class RequestController extends Controller
             return response()->json(['message' => 'Approval slip is only available for approved or released requests.'], 422);
         }
 
+        SystemLog::create([
+            'action' => 'Approval slip downloaded',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return $this->buildApprovalSlipPdf($recordRequest);
     }
 

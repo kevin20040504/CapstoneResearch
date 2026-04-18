@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Models\RecordRequest;
 use App\Models\Student;
+use App\Models\SystemLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -137,7 +138,11 @@ class ReportController extends Controller
         }
         $approved = RecordRequest::where('status', RecordRequest::STATUS_APPROVED)->count()
             + RecordRequest::where('status', RecordRequest::STATUS_RELEASED)->count();
-
+        SystemLog::create([
+            'action' => 'Approval rate calculated',
+            'user_id' => auth()->user()->id,
+            'role' => auth()->user()->roles->first()?->name ?? auth()->user()->role ?? null,
+        ]);
         return round($approved / $total * 100, 2);
     }
 

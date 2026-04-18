@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLE_ROUTES } from '../contexts/AuthContext';
 
@@ -212,10 +212,6 @@ const Home = () => {
                   {error}
                 </p>
               )}
-
-              <p className="sd-login-signup">
-                Don&apos;t have an account? <Link to="/signup" className="sd-login-signup-link">Sign up here</Link>
-              </p>
             </div>
           </div>
         </section>

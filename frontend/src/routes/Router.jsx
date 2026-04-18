@@ -27,14 +27,14 @@ import StaffEditStudentPage from '../pages/StaffEditStudentPage';
 import ViewRecordsPage from '../pages/ViewRecordsPage';
 import StudentLayout from '../layouts/StudentLayout';
 import StudentRequestRecordPage from '../pages/StudentRequestRecordPage';
-import StudentSignup from '../pages/StudentSignup';
 import StudentSISPage from '../pages/StudentSISPage';
 import { AuthProvider, useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 import { queryClient } from '../lib/react-query/queryClient';
+import AdminSystemLogsPage from '../pages/admin/AdminSystemLogsPage';
 
 function RootLayout() {
   const location = useLocation();
-  const isFullPage = location.pathname === '/' || location.pathname === '/signup';
+  const isFullPage = location.pathname === '/';
   const isStudentArea = location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard/');
   const isStaffArea = location.pathname.startsWith('/staff');
   const isAdminArea = location.pathname.startsWith('/admin');
@@ -88,7 +88,6 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Home /> },
-      { path: 'signup', element: <StudentSignup /> },
       { path: 'login', element: <Login /> },
       {
         path: 'dashboard',
@@ -139,6 +138,7 @@ const router = createBrowserRouter([
           { path: 'document-release', element: <AdminDocumentReleasePage /> },
           { path: 'reports', element: <AdminReportsPage /> },
           { path: 'settings', element: <AdminSystemSettingsPage /> },
+          { path: 'logs', element: <AdminSystemLogsPage /> },
         ],
       },
       {

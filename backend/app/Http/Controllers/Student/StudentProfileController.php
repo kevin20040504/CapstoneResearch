@@ -202,7 +202,11 @@ class StudentProfileController extends Controller
 
         $student->update($request->validated());
         $student->refresh();
-
+        SystemLog::create([
+            'action' => 'SIS updated',
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+        ]);
         return response()->json([
             'message' => 'SIS updated successfully.',
             'student' => $student->load('program'),
