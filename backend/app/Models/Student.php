@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class Student extends Model
 {
@@ -73,5 +76,10 @@ class Student extends Model
     public function recordRequests(): HasMany
     {
         return $this->hasMany(RecordRequest::class, 'student_id', 'student_id');
+    }
+    
+    public function archiveRecords(): HasOne
+    {
+        return $this->hasOne(ArchiveRecord::class, 'student_id', 'student_id');
     }
 }

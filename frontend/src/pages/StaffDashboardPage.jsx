@@ -4,9 +4,7 @@ import { FiInbox, FiUsers, FiPackage, FiBarChart2 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 
 const quickLinks = [
-  { path: '/staff/requests', label: 'Pending Requests', icon: FiInbox, description: 'Review and approve record requests' },
   { path: '/staff/students', label: 'Student Records', icon: FiUsers, description: 'View and manage student records' },
-  { path: '/staff/document-release', label: 'Document Release', icon: FiPackage, description: 'Release approved documents' },
   { path: '/staff/reports', label: 'Reports', icon: FiBarChart2, description: 'View read-only reports' },
 ];
 

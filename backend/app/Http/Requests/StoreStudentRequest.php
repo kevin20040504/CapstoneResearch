@@ -39,6 +39,14 @@ class StoreStudentRequest extends FormRequest
             'enrollment_date' => ['required', 'date'],
             'graduation_date' => ['nullable', 'date', 'after_or_equal:enrollment_date'],
             'GPA' => ['nullable', 'numeric', 'min:0', 'max:5.00'],
+
+
+            'record_type' => 'required_if:is_archived,true|string',
+            'cabinet_no' => 'required_if:is_archived,true|string',
+            'shelf_no' => 'required_if:is_archived,true|string',
+            'folder_code' => 'required_if:is_archived,true|string',
+            'document_status' => 'required_if:is_archived,true|string',
+            'is_archived' => 'required|boolean',
         ];
     }
 

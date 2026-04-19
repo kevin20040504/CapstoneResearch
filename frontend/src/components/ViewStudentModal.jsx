@@ -1,6 +1,5 @@
 import React, { useEffect, useCallback, useRef } from 'react';
-import { FiX, FiUser, FiMail, FiAward, FiEdit2 } from 'react-icons/fi';
-
+import { FiX, FiUser, FiMail, FiAward, FiEdit2, FiArchive } from 'react-icons/fi';
 const ViewStudentModal = ({ isOpen, onClose, student, studentId, onFetchStudent, onEdit }) => {
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
@@ -102,7 +101,7 @@ const ViewStudentModalContent = ({ student, studentId, onFetchStudent, onClose, 
     const n = parseFloat(val);
     return isNaN(n) ? val : n.toFixed(2);
   };
-
+  console.log(displayStudent);
   return (
     <>
       {/* Header */}
@@ -137,8 +136,22 @@ const ViewStudentModalContent = ({ student, studentId, onFetchStudent, onClose, 
           </div>
         )}
 
-        {displayStudent && !loading && (
-          <div className="space-y-6">
+          {displayStudent && !loading && (
+            
+            <div className="space-y-6">
+              {displayStudent.archive_records  && (
+              <InfoSection
+                title="Archive Information"
+                icon={FiArchive}
+                items={[
+                  { label: 'Record Type', value: displayStudent.archive_records.record_type ?? '—' },
+                  { label: 'Cabinet No', value: displayStudent.archive_records.cabinet_no ?? '—' },
+                  { label: 'Shelf No', value: displayStudent.archive_records.shelf_no ?? '—' },
+                  { label: 'Folder Code', value: displayStudent.archive_records.folder_code ?? '—' },
+                  { label: 'Document Status', value: displayStudent.archive_records.document_status ?? '—' },
+                ]}
+              />
+            )}
             <InfoSection
               title="Personal Information"
               icon={FiUser}

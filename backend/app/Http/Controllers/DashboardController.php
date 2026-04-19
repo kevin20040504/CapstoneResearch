@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Models\RecordRequest;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class DashboardController extends Controller
     private function staffOrAdminDashboard(Request $request): JsonResponse
     {
         $pendingCount = RecordRequest::where('status', RecordRequest::STATUS_PENDING)->count();
-        $processedToday = RecordRequest::whereDate('processed_at', today())->count();
+        $processedToday = Student::whereDate('created_at', today())->count();
         $studentsCount = \App\Models\Student::count();
         $releasedToday = RecordRequest::where('status', RecordRequest::STATUS_RELEASED)
             ->whereDate('released_at', today())

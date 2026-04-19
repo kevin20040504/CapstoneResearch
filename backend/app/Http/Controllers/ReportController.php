@@ -29,7 +29,7 @@ class ReportController extends Controller
         }
 
         $pendingCount = RecordRequest::where('status', RecordRequest::STATUS_PENDING)->count();
-        $processedToday = RecordRequest::whereDate('processed_at', today())->count();
+        $processedToday = Student::whereDate('created_at', today())->count();
         $studentsCount = Student::count();
         $releasedToday = RecordRequest::where('status', RecordRequest::STATUS_RELEASED)
             ->whereDate('released_at', today())
