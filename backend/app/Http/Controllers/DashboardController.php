@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Models\RecordRequest;
 use App\Models\Student;
+use App\Models\SystemLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,18 +49,16 @@ class DashboardController extends Controller
             ->whereDate('released_at', today())
             ->count();
 
-        $recentActivity = RecordRequest::with('student:student_id,first_name,last_name,student_number')
-            ->orderByDesc('updated_at')
-            ->limit(5)
+            $recentActivity = SystemLog::with('user:id,name')->latest()
+            ->take(5)
             ->get()
-            ->map(function ($req) {
+            ->map(function ($log) {
                 return [
-                    'type' => 'record_request',
-                    'id' => $req->id,
-                    'status' => $req->status,
-                    'record_type' => $req->record_type,
-                    'student_name' => $req->student ? trim($req->student->first_name . ' ' . $req->student->last_name) : null,
-                    'updated_at' => $req->updated_at?->toIso8601String(),
+                    'id' => $log->id,
+                    'type' => 'default',
+                    'desc' => $log->action,
+                    'time' => $log->created_at,
+                    'user' => $log->user,
                 ];
             });
 

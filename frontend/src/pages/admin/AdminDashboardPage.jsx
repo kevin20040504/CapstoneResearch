@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiInbox, FiUserPlus, FiBarChart2, FiSettings, FiCheck, FiX } from 'react-icons/fi';
-
-const MOCK_RECENT_ACTIVITY = [
-  { id: 1, type: 'approve', desc: 'Request #12 approved for Juan Dela Cruz', time: '10 min ago' },
-  { id: 2, type: 'release', desc: 'Transcript released for Maria Santos', time: '25 min ago' },
-  { id: 3, type: 'user', desc: 'New staff account created: jane.registrar', time: '1 hour ago' },
-  { id: 4, type: 'reject', desc: 'Request #10 rejected for Pedro Reyes', time: '2 hours ago' },
-  { id: 5, type: 'student', desc: 'Student STU-2024-099 added', time: '3 hours ago' },
-];
+import { formatTime } from '../../lib/tools';
+import { dashboardApi } from '../../lib/api/dashboardApi';
 
 const AdminDashboardPage = () => {
-  const [activity] = useState(MOCK_RECENT_ACTIVITY);
+  const [activity, setActivity] = useState([]);
+  
+  useEffect(() => {
+    dashboardApi.getDashboard()
+      .then((res) => {
+        const acts = res?.recent_activity || [];
+        console.log(acts);
+        const formatted = acts.map((a) => ({
+          id: a.id,
+          type: a.type,
+          desc: a.desc,
+          time: new Date(a.time).toLocaleString(),
+          user: a.user,
+        }));
+  
+        setActivity(formatted);
+      })
+      .catch(() => {});
+  }, []);
 
   const quickLinks = [
-    { to: '/admin/requests', label: 'Pending Requests', icon: FiInbox, color: 'amber' },
     { to: '/admin/users', label: 'User Management', icon: FiUserPlus, color: 'indigo' },
     { to: '/admin/reports', label: 'Reports', icon: FiBarChart2, color: 'green' },
     { to: '/admin/settings', label: 'System Settings', icon: FiSettings, color: 'slate' },
@@ -75,7 +86,7 @@ const AdminDashboardPage = () => {
                 {activityIcon(item.type)}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="m-0 text-sm text-gray-800">{item.desc}</p>
+                <p className="m-0 text-sm text-gray-800">{item.desc} - {item.user.name}</p>
                 <p className="m-0 text-xs text-gray-500">{item.time}</p>
               </div>
             </li>
