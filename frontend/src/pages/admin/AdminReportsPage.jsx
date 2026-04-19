@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { FiInbox, FiUsers, FiCheck, FiClock, FiDownload } from "react-icons/fi";
+import {  FiUsers,FiClock, FiDownload } from "react-icons/fi";
 import { adminToast } from "../../lib/notifications";
 import { staffApi } from "../../lib/api/staffApi";
-import { adminApi } from "../../lib/api/adminApi";
 import { parseApiError } from "../../lib/api/errors";
-
-const statusClass = (status) => {
-  switch (status?.toLowerCase()) {
-    case "released":
-      return "bg-green-100 text-green-800";
-    case "approved":
-      return "bg-blue-100 text-blue-800";
-    case "pending":
-      return "bg-amber-100 text-amber-800";
-    case "rejected":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
 
 function escapeCsvCell(val) {
   const s = val == null ? "" : String(val);
@@ -59,60 +43,132 @@ function openPrintableExport(exportData, summary) {
     adminToast.error("Popup blocked", "Allow popups to print or save as PDF.");
     return;
   }
+
   const esc = (s) =>
     String(s ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
-  const summaryRows = summary
-    ? `<p style="margin:0 0 12px;font-size:14px;">
-        Total requests: <strong>${esc(summary.total_requests)}</strong>
-        · Avg. processing (days): <strong>${summary.avg_processing_time_days != null ? esc(String(summary.avg_processing_time_days)) : "—"}</strong>
-        · Approval rate: <strong>${summary.approval_rate != null ? `${esc(String(summary.approval_rate))}%` : "—"}</strong>
-      </p>`
-    : "";
-  const tableRows = exportData
+
+  const content = exportData
     .map(
-      (row) => `
-    <tr>
-      <td>${esc(row.student_number)}</td>
-      <td>${esc(row.student_name)}</td>
-      <td>${esc(row.record_type)}</td>
-      <td>${esc(row.purpose)}</td>
-      <td>${esc(row.status)}</td>
-      <td>${esc(row.requested_at)}</td>
-      <td>${esc(row.processed_at)}</td>
-      <td>${esc(row.released_at)}</td>
-    </tr>
-  `,
+      (row, i) => `
+      <p>
+        ${i + 1}. <strong>${esc(row.user_name || "System")}</strong> 
+        performed <strong>${esc(row.action)}</strong> 
+        as <strong>${esc(row.role)}</strong> 
+        on ${esc(row.date)} at ${esc(row.time)}.
+      </p>
+    `,
     )
     .join("");
-  w.document
-    .write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Reports export</title>
-    <style>
-      body { font-family: system-ui, sans-serif; padding: 24px; color: #111; }
-      h1 { font-size: 20px; margin: 0 0 16px; }
-      table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-      th { background: #f3f4f6; }
-    </style></head><body>
-    <h1>Record requests report</h1>
-    ${summaryRows}
-    <table>
-      <thead><tr>
-        <th>Student #</th><th>Name</th><th>Record type</th><th>Purpose</th><th>Status</th>
-        <th>Requested</th><th>Processed</th><th>Released</th>
-      </tr></thead>
-      <tbody>${tableRows || '<tr><td colspan="8">No records.</td></tr>'}</tbody>
-    </table>
-    </body></html>`);
+
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8"/>
+      <title>System Log Report</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 40px;
+          color: #111;
+          line-height: 1.6;
+        }
+
+        .header {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+        }
+
+        .logo {
+          width: 60px;
+          height: 60px;
+          object-fit: contain;
+        }
+
+        .title {
+          font-size: 18px;
+          font-weight: bold;
+        }
+
+        .subtitle {
+          font-size: 13px;
+          color: #555;
+        }
+
+        .date {
+          margin-top: 10px;
+          font-size: 12px;
+          color: #555;
+        }
+
+        .content {
+          margin-top: 20px;
+          font-size: 14px;
+          text-align: justify;
+        }
+
+        .intro {
+          margin-top: 15px;
+          font-size: 14px;
+        }
+
+        p {
+          margin-bottom: 12px;
+        }
+      </style>
+    </head>
+    <body>
+
+      <!-- HEADER -->
+      <div class="header">
+        <img src="/logo.png" class="logo" />
+        <div>
+          <div class="title">System Log Report</div>
+          <div class="subtitle">Student Records Management System</div>
+        </div>
+      </div>
+
+      <!-- DATE -->
+      <div class="date">
+        Generated on ${new Date().toLocaleString()}
+      </div>
+
+      <div class="intro">
+        <p>
+          Today, a total of 
+          <strong>${esc(summary?.processed_today ?? "0")}</strong> 
+          transactions were processed in the system. 
+          The system currently holds 
+          <strong>${esc(summary?.students_count ?? "0")}</strong> 
+          registered students.
+        </p>
+      </div>
+
+      <div class="content">
+        ${
+          exportData.length === 0
+            ? "<p>No system logs recorded for today.</p>"
+            : `<p>The following system activities were recorded:</p>${content}`
+        }
+      </div>
+
+    </body>
+    </html>
+  `);
+
   w.document.close();
   w.onload = () => {
     w.focus();
     w.print();
   };
 }
-
 const AdminReportsPage = () => {
   const [summary, setSummary] = useState(null);
   const [recentRequests, setRecentRequests] = useState([]);
@@ -123,6 +179,29 @@ const AdminReportsPage = () => {
     current_page: 1,
     last_page: 1,
   });
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    Promise.all([staffApi.getReportsSummary()])
+      .then(([summaryRes]) => {
+        if (cancelled) return;
+        setSummary(summaryRes || {});
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const parsed = parseApiError(err);
+          setLoadError(parsed.message || "Failed to load reports.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const fetchHistory = async (page = 1) => {
     try {
       setLoading(true);
@@ -154,27 +233,49 @@ const AdminReportsPage = () => {
   const runExport = async (kind) => {
     setExportLoading(true);
     try {
-      const res = await adminApi.exportReports();
-      const exportData = Array.isArray(res?.export_data) ? res.export_data : [];
-      const summaryExport = res?.summary ?? null;
+      const exportData = recentRequests;
+      const summaryExport = summary;
+
       if (kind === "csv") {
         const headers = [
-          "student_number",
-          "student_name",
-          "record_type",
-          "purpose",
-          "status",
-          "requested_at",
-          "processed_at",
-          "released_at",
+          "Student Number",
+          "Student Name",
+          "Record Type",
+          "Purpose",
+          "Status",
+          "Date Requested",
+          "Date Processed",
+          "Date Released",
         ];
-        const rows = exportData.map((row) => headers.map((h) => row[h]));
+
+        const rows = exportData.map((row) => [
+          row.student_number,
+          row.student_name,
+          row.record_type,
+          row.purpose,
+          row.status,
+          row.requested_at,
+          row.processed_at,
+          row.released_at,
+        ]);
+
+        const summaryRows = summaryExport
+          ? [
+              ["REPORT SUMMARY"],
+              ["Processed Today", summaryExport.processed_today ?? "—"],
+              ["Total Students", summaryExport.students_count ?? "—"],
+              [],
+            ]
+          : [];
+
+        const finalRows = [...summaryRows, headers, ...rows];
+
         const stamp = new Date()
           .toISOString()
           .slice(0, 19)
           .replace(/[:T]/g, "-");
-        downloadCsv(`reports_export_${stamp}.csv`, rows, headers);
-        adminToast.success("Export completed", "CSV downloaded.");
+
+        downloadCsv(`reports_export_${stamp}.csv`, finalRows, []);
       } else {
         openPrintableExport(exportData, summaryExport);
         adminToast.success(
@@ -206,14 +307,7 @@ const AdminReportsPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            disabled={exportLoading}
-            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark disabled:opacity-70"
-          >
-            <FiDownload /> Export CSV
-          </button>
+        
           <button
             type="button"
             onClick={handleExportPDF}
@@ -258,7 +352,7 @@ const AdminReportsPage = () => {
                 {summary?.processed_today ?? "—"}
               </p>
               <small className="block mt-1 text-gray-400 text-xs">
-                Approved/rejected today
+                Crated Student Today
               </small>
             </div>
             <div className="p-5 rounded-xl bg-gray-50 border-l-4 border-indigo-500">
@@ -280,11 +374,8 @@ const AdminReportsPage = () => {
       <section className="bg-white rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h3 className="mt-0 mb-2 text-lg font-semibold text-gray-800">
-            Transaction History
+            Log History
           </h3>
-          <p className="m-0 text-sm text-gray-500">
-            Recent record requests (newest first).
-          </p>
         </div>
         <div className="overflow-x-auto">
           <table
