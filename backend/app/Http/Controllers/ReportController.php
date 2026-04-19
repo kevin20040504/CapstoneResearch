@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\SystemLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Reports: KPIs and transaction history. Staff: read-only. Admin: full + export.
@@ -51,33 +52,52 @@ class ReportController extends Controller
      */
     public function transactionHistory(Request $request): JsonResponse
     {
-        if ($err = $this->requireAuth()) {
-            return $err;
+        try {
+            if ($err = $this->requireAuth()) {
+                return $err;
+            }
+            if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+                return $err;
+            }
+    
+            $query = SystemLog::with('user'); 
+    
+            if ($dateFrom = $request->input('date_from')) {
+                $query->whereDate('created_at', '>=', $dateFrom);
+            }
+            if ($dateTo = $request->input('date_to')) {
+                $query->whereDate('created_at', '<=', $dateTo);
+            }
+            if ($role = $request->input('role')) {
+                $query->where('role', $role);
+            }
+    
+            $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
+    
+            $items = $query->latest()->paginate($perPage);
+    
+            $items->getCollection()->transform(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'user_name' => $log->user 
+                        ? $log->user->name 
+                        : 'System',
+                    'action' => $log->action,
+                    'role' => ucfirst($log->role),
+                    'date' => $log->created_at->format('Y-m-d'),
+                    'time' => $log->created_at->format('h:i A'),
+                ];
+            });
+    
+            return response()->json($items);
+    
+        } catch (\Exception $e) {
+            Log::error('error while fetching logs: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to get transaction history',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
-            return $err;
-        }
-
-        $query = RecordRequest::with('student:student_id,student_number,first_name,last_name')
-            ->orderByDesc('requested_at');
-
-        if ($dateFrom = $request->input('date_from')) {
-            $query->whereDate('requested_at', '>=', $dateFrom);
-        }
-        if ($dateTo = $request->input('date_to')) {
-            $query->whereDate('requested_at', '<=', $dateTo);
-        }
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-        if ($recordType = $request->input('record_type')) {
-            $query->where('record_type', $recordType);
-        }
-
-        $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
-        $items = $query->paginate($perPage);
-
-        return response()->json($items);
     }
 
     /**
