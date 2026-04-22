@@ -101,7 +101,7 @@ const AdminSystemSettingsPage = () => {
                   <p className="m-0 text-sm text-gray-600">{settings.semester || '—'}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+              {/* <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
                 <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-tmcc shrink-0">
                   <FiMail className="w-5 h-5" />
                 </span>
@@ -109,7 +109,7 @@ const AdminSystemSettingsPage = () => {
                   <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Email Notifications</p>
                   <p className="m-0 mt-1 text-gray-800">{settings.emailNotifications ? 'Enabled' : 'Disabled'}</p>
                 </div>
-              </div>
+              </div> */}
             </>
           )}
         </div>

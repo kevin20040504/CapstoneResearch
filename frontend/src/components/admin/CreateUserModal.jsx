@@ -5,7 +5,6 @@ import { parseApiError } from '../../lib/api/errors';
 import { adminApi } from '../../lib/api/adminApi';
 
 const ROLES = [
-  { value: 'student', label: 'Student' },
   { value: 'staff', label: 'Staff' },
   { value: 'admin', label: 'Admin' },
 ];
