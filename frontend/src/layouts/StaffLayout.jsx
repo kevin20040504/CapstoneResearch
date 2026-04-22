@@ -98,7 +98,6 @@ const StaffLayout = () => {
 
   const navItemsBeforeRegistrar = [
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid, path: '/staff' },
-    { id: 'requests', label: 'Pending Requests', icon: FiInbox, path: '/staff/requests' },
   ];
 
   const registrarSubItems = [
@@ -120,7 +119,6 @@ const StaffLayout = () => {
   ];
 
   const navItemsAfterRegistrar = [
-    { id: 'document-release', label: 'Document Release', icon: FiPackage, path: '/staff/document-release' },
     { id: 'reports', label: 'Reports', icon: FiBarChart2, path: '/staff/reports' },
   ];
 
@@ -308,15 +306,6 @@ const StaffLayout = () => {
 
         <div className="bg-white border-b border-gray-100 px-6 py-4 shrink-0">
           <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Link to="/staff/requests" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
-              <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 text-amber-700">
-                <FiInbox className="w-6 h-6" />
-              </span>
-              <div>
-                <p className="m-0 text-2xl font-bold text-gray-900">{kpi.pendingRequests}</p>
-                <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Requests</p>
-              </div>
-            </Link>
             <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
               <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-green-100 text-green-700">
                 <FiCheckCircle className="w-6 h-6" />
@@ -335,15 +324,7 @@ const StaffLayout = () => {
                 <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Students</p>
               </div>
             </Link>
-            <Link to="/staff/document-release" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
-              <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700">
-                <FiPackage className="w-6 h-6" />
-              </span>
-              <div>
-                <p className="m-0 text-2xl font-bold text-gray-900">{kpi.documentsReleased}</p>
-                <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Documents Released</p>
-              </div>
-            </Link>
+           
           </div>
         </div>
 

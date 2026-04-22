@@ -27,14 +27,8 @@ class AccountSeeder extends Seeder
                 'email' => 'staff@example.com',
                 'password' => 'password123', 
                 'role' => 'staff',
-            ],
-            [
-                'name' => 'Student User',
-                'username' => 'student',
-                'email' => 'student@example.com',
-                'password' => 'password123', 
-                'role' => 'student',
-            ],
+            ]
+         
         ];
         foreach ($users as $userData) {
             $user = User::create($userData);

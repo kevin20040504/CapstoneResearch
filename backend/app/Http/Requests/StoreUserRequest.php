@@ -21,6 +21,7 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'role' => ['required', 'string', 'in:student,staff,admin'],
             'department' => ['nullable', 'string', 'max:100'],
+            
         ];
     }
 

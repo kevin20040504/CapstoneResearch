@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   FiInbox,
@@ -18,13 +18,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordModal from '../components/staff/ChangePasswordModal';
 import { useCurrentTermQuery } from '../hooks/useCurrentTermQuery';
+import { dashboardApi } from '../lib/api/dashboardApi';
 
-const MOCK_KPI = {
-  pendingRequests: 3,
-  processedToday: 12,
-  studentsCount: 982,
-  documentsReleased: 8,
-};
+
 
 const AdminLayout = () => {
   const { user, logout, logoutMutation } = useAuth();
@@ -33,12 +29,18 @@ const AdminLayout = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [kpi] = useState(MOCK_KPI);
+  const [kpi, setKpi] = useState({
+    pendingRequests: 0,
+    processedToday: 0,
+    studentsCount: 0,
+    documentsReleased: 0,
+  });
   const { data: term, isLoading: termLoading } = useCurrentTermQuery();
-
+  
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
+  
       setCurrentDate(
         now.toLocaleDateString('en-US', {
           weekday: 'long',
@@ -47,6 +49,7 @@ const AdminLayout = () => {
           day: 'numeric',
         })
       );
+  
       setCurrentTime(
         now.toLocaleTimeString('en-US', {
           hour: '2-digit',
@@ -56,11 +59,29 @@ const AdminLayout = () => {
         })
       );
     };
+  
     updateDateTime();
     const interval = setInterval(updateDateTime, 1000);
+  
     return () => clearInterval(interval);
   }, []);
-
+    const fetchKpis = useCallback(() => {
+      dashboardApi.getDashboard()
+        .then((res) => {
+          const k = res?.kpis || {};
+          setKpi({
+            pendingRequests: k.pending_requests ?? 0,
+            processedToday: k.processed_today ?? 0,
+            studentsCount: k.students_count ?? 0,
+            documentsReleased: k.documents_released_today ?? 0,
+          });
+        })
+        .catch(() => {});
+    }, []);
+    useEffect(() => {
+      fetchKpis();
+    }, [location.pathname, fetchKpis]);
+    
   const pathname = location.pathname;
   const isNewStudentPage = pathname === '/admin/students/new';
 
@@ -198,15 +219,7 @@ const AdminLayout = () => {
 
         <div className="bg-white border-b border-gray-100 px-6 py-4 shrink-0">
           <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Link to="/admin/requests" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
-              <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 text-amber-700">
-                <FiInbox className="w-6 h-6" />
-              </span>
-              <div>
-                <p className="m-0 text-2xl font-bold text-gray-900">{kpi.pendingRequests}</p>
-                <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Requests</p>
-              </div>
-            </Link>
+           
             <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
               <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-green-100 text-green-700">
                 <FiCheckCircle className="w-6 h-6" />
@@ -225,15 +238,7 @@ const AdminLayout = () => {
                 <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Students</p>
               </div>
             </Link>
-            <Link to="/admin/document-release" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-tmcc/30 hover:bg-green-50/50 transition-colors no-underline text-gray-800">
-              <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700">
-                <FiPackage className="w-6 h-6" />
-              </span>
-              <div>
-                <p className="m-0 text-2xl font-bold text-gray-900">{kpi.documentsReleased}</p>
-                <p className="m-0 text-xs font-medium text-gray-500 uppercase tracking-wider">Documents Released</p>
-              </div>
-            </Link>
+            
           </div>
         </div>
 

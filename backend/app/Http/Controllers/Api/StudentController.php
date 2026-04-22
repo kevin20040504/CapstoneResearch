@@ -18,6 +18,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -25,7 +26,6 @@ class StudentController extends Controller
 {
     use AuthorizesRole;
 
-    private const DEFAULT_STUDENT_PASSWORD = 'password123';
 
     /**
      * List students with search, filter by course/status, pagination (staff + admin).
@@ -39,8 +39,7 @@ class StudentController extends Controller
             return $err;
         }
 
-        $query = Student::query()->with(['user:id,name,username,email', 'program:id,code,name']);
-
+        $query = Student::query()->with(['user:id,name,username,email', 'program:id,code,name', 'archiveRecords']);
         if ($search = $request->input('search')) {
             $search = preg_replace('/\s+/', ' ', trim($search));
             $query->where(function ($q) use ($search) {
@@ -48,9 +47,9 @@ class StudentController extends Controller
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('student_number', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
-            });
+                });
         }
-
+        
         if ($program = $request->input('program')) {
             $program = trim((string) $program);
             if ($program !== '') {
@@ -80,6 +79,7 @@ class StudentController extends Controller
 
         $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
         $students = $query->paginate($perPage);
+        Log::info(ArchiveRecord::where('student_id', $students->first()->student_id)->get());
 
         return response()->json($students);
     }
@@ -94,7 +94,6 @@ class StudentController extends Controller
         if (! $user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
-
         $role = $user->roles->first()?->name ?? $user->role ?? null;
         if (! in_array($role, ['staff', 'admin'], true)) {
             return response()->json(['message' => 'Forbidden. Staff or Admin only.'], 403);
@@ -106,35 +105,38 @@ class StudentController extends Controller
         $studentNumber = $validated['student_number'];
         $name = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $email = $validated['email'];
-
-        $student = DB::transaction(function () use ($validated, $studentNumber, $name, $email) {
+        $exactPassword = User::generatePassword();
+        $student = DB::transaction(function () use ($validated, $studentNumber, $name, $email, $exactPassword) {
             $account = User::create([
                 'name' => $name,
                 'email' => $email,
                 'username' => $studentNumber,
-                'password' => self::DEFAULT_STUDENT_PASSWORD,
                 'role' => 'student',
+                'password' => Hash::make($exactPassword),
             ]);
             $account->assignRole('student');
 
             $studentData = $validated;
             $studentData['user_id'] = $account->id;
 
-            return Student::create($studentData);
+            $student = Student::create($studentData);
+            return $student;
         });
 
         // create archive record
-        $archiveRecord = ArchiveRecord::create([
-            'student_id' => $student->student_id,
-            'record_type' => $validated['record_type'],
-            'cabinet_no' => $validated['cabinet_no'],
-            'shelf_no' => $validated['shelf_no'],
-            'folder_code' => $validated['folder_code'],
-            'document_status' => $validated['document_status'],
-        ]);
-
-        if (!$archiveRecord) {
-            return response()->json(['message' => 'Failed to create archive record.'], 500);
+        if($validated['is_archived']) {
+            $archiveRecord = ArchiveRecord::create([
+                'student_id' => $student->student_id,
+                'record_type' => $validated['record_type'],
+                'cabinet_no' => $validated['cabinet_no'],
+                'shelf_no' => $validated['shelf_no'],
+                'folder_code' => $validated['folder_code'],
+                'document_status' => $validated['document_status'],
+            ]);
+    
+            if (!$archiveRecord) {
+                return response()->json(['message' => 'Failed to create archive record.'], 500);
+            }
         }
 
         SystemLog::create([
@@ -147,7 +149,7 @@ class StudentController extends Controller
             'student' => $student,
             'account' => [
                 'username' => $studentNumber,
-                'password' => self::DEFAULT_STUDENT_PASSWORD,
+                'password' => $exactPassword,
             ],
         ], 201);
         } catch (\Exception $e) {
@@ -171,11 +173,11 @@ class StudentController extends Controller
             return response()->json(['message' => 'Forbidden. Staff or Admin only.'], 403);
         }
 
-        $student = Student::with(['program', 'enrollments.subject', 'grades.subject'])->find($id);
+        $student = Student::with(['program', 'enrollments.subject', 'grades.subject', 'archiveRecords'])->find($id);
         if (! $student) {
             return response()->json(['message' => 'Student not found.'], 404);
         }
-
+        Log::info($student);
         return response()->json(['student' => $student]);
     }
 
@@ -492,5 +494,44 @@ class StudentController extends Controller
             'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
         ]);
         return response()->json(['message' => 'Grade removed.']);
+    }
+
+    /*
+     *  Archive a student
+    */
+    public function archiveStudent(Request $request, int $id): JsonResponse
+    {
+        try {
+            if ($err = $this->requireAuth()) {
+                return $err;
+            }
+            if ($err = $this->requireRoles($request->user(), ['staff', 'admin'])) {
+                return $err;
+            }
+            $student = Student::find($id);
+            if (! $student) {
+                return response()->json(['message' => 'Student not found.'], 404);
+            }
+            $archiveRecord = ArchiveRecord::create([
+                'student_id' => $student->student_id,
+                'record_type' => $request->input('record_type'),
+                'cabinet_no' => $request->input('cabinet_no'),
+                'shelf_no' => $request->input('shelf_no'),
+                'folder_code' => $request->input('folder_code'),
+                'document_status' => $request->input('document_status'),
+            ]);
+            if (!$archiveRecord) {
+                return response()->json(['message' => 'Failed to create archive record.'], 500);
+            }
+            SystemLog::create([
+                'action' => 'Student archived',
+                'user_id' => $request->user()->id,
+                'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
+            ]);
+            return response()->json(['message' => 'Student archived successfully.']);
+        } catch (\Exception $e) {
+            Log::error('Failed to archive student: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to archive student.'], 500);
+        }
     }
 }

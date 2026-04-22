@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -70,4 +71,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(ArchiveRecord::class, 'user_id', 'id');
     }
+
+    // auto generate student password, ensure not alreay exists in the users table
+    protected static function generatePassword()
+    {
+
+        $password = Str::random(10);
+        while (User::where('password', $password)->exists()) {
+            $password = Str::random(10);
+        }
+        return $password;
+    }   
 }

@@ -160,12 +160,7 @@ const StudentLayout = () => {
           >
             Home
           </Link>
-          <Link
-            to="/dashboard/request"
-            className={`sd-main-nav-item ${isRequestPage ? 'active' : ''}`}
-          >
-            Request Record
-          </Link>
+        
         </nav>
 
         {/* ========== TAB CONTENT ========== */}

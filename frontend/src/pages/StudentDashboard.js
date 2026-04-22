@@ -55,9 +55,7 @@ const StudentDashboard = () => {
           </p>
 
           <div className="sd-quick-links">
-            <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, requestRecord: true }))}>
-              <span className="sd-quick-icon"><FiFileText /></span> Request Academic Record (Transcript, Certificate, etc.)
-            </button>
+            
             <button type="button" className="sd-quick-link" onClick={() => setModalOpen((m) => ({ ...m, subjects: true }))}>
               <span className="sd-quick-icon"><FiLayers /></span> Subjects
             </button>

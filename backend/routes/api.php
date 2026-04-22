@@ -48,6 +48,7 @@ Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(
     Route::get('/programs', [StudentController::class, 'programs']);
     Route::get('/students', [StudentController::class, 'index']);
     Route::post('/students', [StudentController::class, 'store']);
+    Route::post('/students/{id}/archive', [StudentController::class, 'archiveStudent']);
     Route::get('/students/{id}/transcript', [StudentController::class, 'downloadTranscript']);
     Route::get('/students/{id}', [StudentController::class, 'show']);
     Route::put('/students/{id}', [StudentController::class, 'update']);

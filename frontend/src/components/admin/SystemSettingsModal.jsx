@@ -118,7 +118,7 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoa
               <option value="2nd Semester">2nd Semester</option>
             </select>
           </div>
-          <div className="flex items-center gap-3 pt-2">
+          {/* <div className="flex items-center gap-3 pt-2">
             <input
               id="email-notifications"
               type="checkbox"
@@ -127,7 +127,7 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoa
               className="w-4 h-4 rounded border-gray-300 text-tmcc focus:ring-tmcc/30"
             />
             <label htmlFor="email-notifications" className="text-sm font-medium text-gray-700">Enable email notifications</label>
-          </div>
+          </div> */}
         </div>
         <div className="flex gap-3 mt-6 justify-end">
           <button type="button" onClick={onClose} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300">
