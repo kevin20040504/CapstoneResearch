@@ -520,6 +520,93 @@ const StaffEditStudentPage = ({ basePath = '/staff' }) => {
                   Manage subject enrollments and grades per thesis data model: <strong>enrollments</strong> (student–subject–academic year–semester–status) and <strong>grades</strong> (student–subject–academic year–semester–grade value–remarks). Fields marked * are required.
                 </p>
 
+                 <div className="p-6 bg-white rounded-xl border-l-4 border-tmcc shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100">
+                  <h4 className="m-0 mb-4 text-base font-semibold text-gray-800">Subject Enrollments</h4>
+                  {studentDetail.enrollments.length > 0 ? (
+                    <div className="overflow-x-auto mb-4">
+                      <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left py-2 px-3 border-b border-gray-200">Subject</th>
+                            <th className="text-left py-2 px-3 border-b border-gray-200">Academic Year</th>
+                            <th className="text-left py-2 px-3 border-b border-gray-200">Semester</th>
+                            <th className="text-left py-2 px-3 border-b border-gray-200">Status</th>
+                            <th className="text-right py-2 px-3 border-b border-gray-200">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {studentDetail.enrollments.map((enr) => (
+                            <tr key={enr.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                              <td className="py-2 px-3">{enr.subject ? `${enr.subject.code} – ${enr.subject.title}` : enr.subject_id}</td>
+                              <td className="py-2 px-3">{enr.academic_year}</td>
+                              <td className="py-2 px-3">{enr.semester}</td>
+                              <td className="py-2 px-3 capitalize">{enr.status}</td>
+                              <td className="py-2 px-3 text-right">
+                                <button type="button" onClick={() => startEditEnrollment(enr)} className="text-tmcc hover:underline mr-2" aria-label="Edit enrollment"><FiEdit2 className="inline" /></button>
+                                <button type="button" onClick={() => handleDeleteEnrollment(enr.id)} className="text-red-600 hover:underline" aria-label="Delete enrollment"><FiTrash2 className="inline" /></button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm mb-4">No enrollments yet. Add one below.</p>
+                  )}
+                  {editingEnrollmentId ? (
+                    <form onSubmit={handleUpdateEnrollment} className="flex flex-wrap items-end gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <span className="text-sm text-amber-800 font-medium w-full">Editing status</span>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-600">Status (optional)</label>
+                        <select value={enrollmentForm.status} onChange={(e) => setEnrollmentForm((p) => ({ ...p, status: e.target.value }))} className={`${inputBase} ${inputNormal} min-w-[140px]`}>
+                          {ENROLLMENT_STATUS_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button type="submit" className="py-2 px-4 rounded-lg bg-tmcc text-white text-sm font-medium">Save</button>
+                      <button type="button" onClick={() => { setEditingEnrollmentId(null); setEnrollmentForm({ subject_id: '', academic_year: '', semester: '1st', status: 'enrolled' }); }} className="py-2 px-4 rounded-lg bg-gray-500 text-white text-sm">Cancel</button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleAddEnrollment} className="flex flex-wrap items-end gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-600">Subject *</label>
+                        <select value={enrollmentForm.subject_id} onChange={(e) => setEnrollmentForm((p) => ({ ...p, subject_id: e.target.value }))} className={`${inputBase} ${enrollmentErrors.subject_id ? inputError : inputNormal} min-w-[200px]`} required>
+                          <option value="">Select subject</option>
+                          {subjects.map((sub) => (
+                            <option key={sub.id} value={sub.id}>{sub.code} – {sub.title}</option>
+                          ))}
+                        </select>
+                        {enrollmentErrors.subject_id && <span className="text-xs text-red-600">{enrollmentErrors.subject_id}</span>}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-600">Academic Year *</label>
+                        <input type="text" value={enrollmentForm.academic_year} onChange={(e) => setEnrollmentForm((p) => ({ ...p, academic_year: e.target.value }))} placeholder="e.g. 2025-2026" className={`${inputBase} ${enrollmentErrors.academic_year ? inputError : inputNormal} w-32`} />
+                        {enrollmentErrors.academic_year && <span className="text-xs text-red-600">{enrollmentErrors.academic_year}</span>}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-600">Semester *</label>
+                        <select value={enrollmentForm.semester} onChange={(e) => setEnrollmentForm((p) => ({ ...p, semester: e.target.value }))} className={`${inputBase} ${enrollmentErrors.semester ? inputError : inputNormal} min-w-[100px]`}>
+                          {SEMESTER_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        {enrollmentErrors.semester && <span className="text-xs text-red-600">{enrollmentErrors.semester}</span>}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-600">Status (optional)</label>
+                        <select value={enrollmentForm.status} onChange={(e) => setEnrollmentForm((p) => ({ ...p, status: e.target.value }))} className={`${inputBase} ${inputNormal} min-w-[120px]`}>
+                          {ENROLLMENT_STATUS_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button type="submit" className="inline-flex items-center gap-1 py-2 px-4 rounded-lg bg-tmcc text-white text-sm font-medium"><FiPlus className="inline" /> Add Enrollment</button>
+                    </form>
+                  )}
+                </div>
+                {/* Program Details */}
+                
                 {/* Enrollments */}
                 <div className="p-6 bg-white rounded-xl border-l-4 border-tmcc shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100">
                   <h4 className="m-0 mb-4 text-base font-semibold text-gray-800">Subject Enrollments</h4>

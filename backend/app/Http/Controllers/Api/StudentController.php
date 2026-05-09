@@ -79,7 +79,7 @@ class StudentController extends Controller
 
         $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
         $students = $query->paginate($perPage);
-        Log::info(ArchiveRecord::where('student_id', $students->first()->student_id)->get());
+        // Log::info(ArchiveRecord::where('student_id', $students?->first()?->student_id)->get());
 
         return response()->json($students);
     }

@@ -263,7 +263,7 @@ const StaffStudentRecordsPage = () => {
                 <SortableTh label="Course" sortKey="course" />
                 <SortableTh label="Status" sortKey="status" />
                 <th className="py-3 px-4 text-left border-b-2 border-gray-200 bg-gray-100 font-semibold text-gray-700">
-                  Actions
+                  Actions 
                 </th>
               </tr>
             </thead>
@@ -280,19 +280,19 @@ const StaffStudentRecordsPage = () => {
               ) : students.length > 0 ? (
                 students.map((student) => (
                   <tr
-                    key={student.student_id}
+                    key={student?.student_id}
                     className="border-b border-gray-100 hover:bg-gray-50/80"
                   >
                     <td className="py-3 px-4 text-gray-800">
-                      {student.student_number ?? student.student_id}
+                      {student?.student_number ?? student?.student_id}
                     </td>
-                    <td className="py-3 px-4 text-gray-800">{student.name}</td>
+                    <td className="py-3 px-4 text-gray-800">{student?.name}</td>
                     <td className="py-3 px-4 text-gray-700">
-                      {student.course}
+                      {student?.course}
                     </td>
                     <td className="py-3 px-4">
                       <span className="inline-block py-1 px-3 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {student.status}
+                        {student?.status}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -301,7 +301,7 @@ const StaffStudentRecordsPage = () => {
                           type="button"
                           onClick={() => setViewingStudent(student)}
                           className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-tmcc text-white hover:bg-tmcc-dark focus:outline-none focus:ring-2 focus:ring-tmcc/30 transition-colors"
-                          aria-label={`View details for ${student.name}`}
+                          aria-label={`View details for ${student?.name}`}
                         >
                           <FiEye /> View
                         </button>
@@ -309,12 +309,12 @@ const StaffStudentRecordsPage = () => {
                           type="button"
                           onClick={() =>
                             navigate(
-                              `/staff/students/${student.student_id}/edit`,
+                              `/staff/students/${student?.student_id}/edit`,
                               { state: { student } },
                             )
                           }
                           className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-amber-600 text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-colors"
-                          aria-label={`Edit ${student.name}`}
+                          aria-label={`Edit ${student?.name}`}
                         >
                           <FiEdit2 /> Edit
                         </button>
@@ -322,7 +322,7 @@ const StaffStudentRecordsPage = () => {
                           type="button"
                           onClick={() => setArchivingStudent(student)}
                           className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-colors"
-                          aria-label={`Edit ${student.name}`}
+                          aria-label={`Edit ${student?.name}`}
                         >
                           <FiArchive /> Archive
                         </button>
@@ -388,7 +388,7 @@ const StaffStudentRecordsPage = () => {
         onFetchStudent={(id) => staffApi.getStudentById(id)}
         onEdit={(s) => {
           setViewingStudent(null);
-          navigate(`/staff/students/${s.student_id ?? s.id}/edit`, {
+          navigate(`/staff/students/${s?.student_id ?? s.id}/edit`, {
             state: { student: s },
           });
         }}
