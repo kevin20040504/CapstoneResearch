@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\UpdateStudentSisRequest;
 use App\Models\SystemSetting;
+use App\Models\SystemLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
