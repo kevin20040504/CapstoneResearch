@@ -20,4 +20,9 @@ class Program extends Model
     {
         return $this->hasMany(Curriculum::class);
     }
+
+    public function programMappings()
+    {
+        return $this->hasMany(ProgramMapping::class);
+    }
 }

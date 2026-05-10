@@ -53,6 +53,10 @@ class Student extends Model
         'GPA' => 'decimal:2',
     ];
 
+    public function programMappings()
+    {
+        return $this->hasMany(ProgramMapping::class, 'student_id', 'student_id');
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

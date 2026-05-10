@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\UpdateStudentSisRequest;
+use App\Models\ProgramMapping;
+use App\Models\SystemLog;
 use App\Models\SystemSetting;
 use App\Models\SystemLog;
 use Illuminate\Http\JsonResponse;
@@ -38,12 +40,21 @@ class StudentProfileController extends Controller
         }
 
         $student->load('program');
+        $student->load('programMappings.program');
         $academicYear = SystemSetting::getValue('academic_year') ?: date('Y') . '-' . (date('Y') + 1);
         $semester = SystemSetting::getValue('semester') ?: '2nd Semester';
-
+        $semesterMapping  = [
+            '2nd Semester' => 2,
+            '1st Semester' => 1
+        ];
+        
+        $programMapping = ProgramMapping::where('student_id',$student->student_id)->where('academic_year', $academicYear)->where('semester', $semesterMapping[$semester])->first();
+       
         return response()->json([
             'student' => $student,
             'academic_year' => $academicYear,
+            'program' => $programMapping?->program,
+            'program_mapping' => $programMapping,
             'semester' => $semester,
             'institution_name' => SystemSetting::getValue('institution_name') ?: 'Trece Martires City College',
         ]);

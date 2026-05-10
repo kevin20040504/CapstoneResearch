@@ -9,7 +9,7 @@ class Curriculum extends Model
 {
     protected $table = 'curriculum';
 
-    protected $fillable = ['program_id', 'subject_id', 'year_level', 'semester'];
+    protected $fillable = ['program_id', 'subject_id', 'year_level', 'semester','prerequisite'];
 
     public function program(): BelongsTo
     {
@@ -19,5 +19,10 @@ class Curriculum extends Model
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function prerequisite(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class, 'prerequisite');
     }
 }

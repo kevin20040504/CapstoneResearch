@@ -7,10 +7,12 @@ use App\Http\Controllers\Concerns\AuthorizesRole;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\ArchiveRecord;
+use App\Models\Curriculum;
 use App\Services\OfficialTranscriptExportService;
 use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\Program;
+use App\Models\ProgramMapping;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SystemLog;
@@ -79,7 +81,7 @@ class StudentController extends Controller
 
         $perPage = min(max((int) $request->input('per_page', 15), 5), 100);
         $students = $query->paginate($perPage);
-        Log::info(ArchiveRecord::where('student_id', $students->first()->student_id)->get());
+        // Log::info(ArchiveRecord::where('student_id', $students?->first()?->student_id)->get());
 
         return response()->json($students);
     }
@@ -307,33 +309,80 @@ class StudentController extends Controller
             return response()->json(['message' => 'Student not found.'], 404);
         }
         $validated = $request->validate([
-            'subject_id' => ['required', 'integer', 'exists:subjects,id'],
+            'program_id' => ['required', 'integer', 'exists:programs,id'],
             'academic_year' => ['required', 'string', 'max:20'],
             'semester' => ['required', 'string', 'max:20'],
             'status' => ['nullable', 'string', 'max:20', 'in:enrolled,completed,dropped'],
+            'year_level' => ['required', 'integer', 'min:1', 'max:4'],
         ], [
-            'subject_id.required' => 'Subject is required.',
+            'program_id.required' => 'Program is required.',
             'academic_year.required' => 'Academic year is required.',
             'semester.required' => 'Semester is required.',
+            'year_level.required' => 'Year level is required.',
         ]);
         $validated['student_id'] = $student->student_id;
         $validated['status'] = $validated['status'] ?? 'enrolled';
-        $exists = Enrollment::where('student_id', $student->student_id)
-            ->where('subject_id', $validated['subject_id'])
-            ->where('academic_year', $validated['academic_year'])
+
+        $SEMESTER_MAPPING = ['1st' => 1, '2nd' => 2];
+        $validated['semester'] = $SEMESTER_MAPPING[$validated['semester']];
+        $subjects = Curriculum::where('program_id', $validated['program_id'])
+            ->where('year_level', $validated['year_level'])
             ->where('semester', $validated['semester'])
-            ->exists();
-        if ($exists) {
-            return response()->json(['message' => 'This student is already enrolled in this subject for the given academic year and semester.', 'errors' => ['subject_id' => ['Duplicate enrollment.']]], 422);
+            ->pluck('subject_id')
+            ->toArray();
+
+        $ifExistProgramMapping = ProgramMapping::where('student_id', $student->student_id)
+            ->where('program_id', $validated['program_id'])
+            ->where('academic_year', $validated['academic_year'])
+            ->where('semester',$validated['semester'])
+            ->first();
+        if($ifExistProgramMapping) {
+            return response()->json(['message' => 'this program mapping already exists', 'errors' => ['subject_id' => ['Duplicate enrollment.']]], 422);
         }
-        $enrollment = Enrollment::create($validated);
-        $enrollment->load('subject');
+        Log::info('Subjects to enroll: ' . implode(', ', $subjects));
+        foreach ($subjects as $subjectId) {
+            $exists = Enrollment::where('student_id', $student->student_id)
+                ->where('subject_id', $subjectId)
+                ->where('academic_year', $validated['academic_year'])
+                ->where('semester', $validated['semester'])
+                ->exists();
+
+            if (! $exists) {
+                $enrollment = Enrollment::create([
+                    'student_id' => $student->student_id,
+                    'subject_id' => $subjectId,
+                    'academic_year' => $validated['academic_year'],
+                    'semester' => $validated['semester'],
+                    'status' => 'enrolled',
+                ]);
+                $enrollment->load('subject');
+            }
+        }
+        // $exists = Enrollment::where('student_id', $student->student_id)
+        //     ->where('subject_id', $validated['subject_id'])
+        //     ->where('academic_year', $validated['academic_year'])
+        //     ->where('semester', $validated['semester'])
+        //     ->exists();
+
+        // if ($exists) {
+        //     return response()->json(['message' => 'This student is already enrolled in this subject for the given academic year and semester.', 'errors' => ['subject_id' => ['Duplicate enrollment.']]], 422);
+        // }
+        
+        ProgramMapping::create([
+            'student_id' => $student->student_id,
+            'program_id' => $validated['program_id'],
+            'academic_year' => $validated['academic_year'],
+            'semester' => $validated['semester'],
+            'status' => $validated['status'],
+            'year_level' => $validated['year_level'],
+        ]);
+        $student->program_id = $validated['program_id'];
         SystemLog::create([
             'action' => 'Enrollment added',
             'user_id' => $request->user()->id,
             'role' => $request->user()->roles->first()?->name ?? $request->user()->role ?? null,
         ]);
-        return response()->json(['message' => 'Enrollment added.', 'enrollment' => $enrollment], 201);
+        return response()->json(['message' => 'Enrollment added.', 'enrollment' => []], 201);
     }
 
     /**

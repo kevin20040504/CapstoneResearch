@@ -46,6 +46,8 @@ Route::get('/settings/current', [SystemSettingsController::class, 'current'])
 Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(function () {
     Route::get('/subjects', [StudentController::class, 'subjects']);
     Route::get('/programs', [StudentController::class, 'programs']);
+    
+
     Route::get('/students', [StudentController::class, 'index']);
     Route::post('/students', [StudentController::class, 'store']);
     Route::post('/students/{id}/archive', [StudentController::class, 'archiveStudent']);
