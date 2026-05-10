@@ -56,10 +56,11 @@ const StudentLayout = () => {
   const handleChangePassword = () => setChangePasswordOpen(true);
 
   const student = profile?.student;
+  const programMapping = profile?.program_mapping;
   const academicYear = profile?.academic_year || '';
   const semester = profile?.semester || '';
   const institutionName = profile?.institution_name || 'Trece Martires City College';
-  const programName = student?.program?.name || student?.program?.code || '';
+  const programName = profile?.program_mapping?.program?.name || student?.program_mapping?.program?.code || '';
   const fullName = student
     ? `${(student.last_name || '').toUpperCase()}, ${(student.first_name || '').toUpperCase()}`
     : '—';
@@ -82,7 +83,7 @@ const StudentLayout = () => {
           <div className="sd-header-inner">
             <div className="sd-brand">
               <img src="/logo.png" alt="TMCC" className="sd-logo" onError={(e) => { e.target.style.display = 'none'; }} />
-              <h1 className="sd-college-name">Trece Martires City College</h1>
+              <h1 className="sd-college-name">Trece Martires City College </h1>
             </div>
             <div className="sd-header-right">
               <div className="sd-datetime">
@@ -123,9 +124,9 @@ const StudentLayout = () => {
                 <h2 className="sd-profile-name">{fullName}</h2>
                 <ul className="sd-academic-list">
                   <li>{semester} {academicYear}</li>
-                  <li>{institutionName}</li>
+                  <li>{institutionName} {}</li>
                   {programName && <li>{programName}</li>}
-                  <li className="sd-status-enrolled !text-green-900">ENROLLED</li>
+                  <li className="sd-status-enrolled !text-green-900">ENROLLED </li>
                 </ul>
               </div>
             </div>
