@@ -172,13 +172,6 @@ const AdminLayout = () => {
               <FiKey className="w-4 h-4" />
               Change Password
             </button>
-            <Link
-              to="/staff"
-              className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-white/25 transition-colors no-underline"
-            >
-              <FiUser className="w-4 h-4" />
-              Staff Dashboard
-            </Link>
             <button
               type="button"
               className="flex items-center gap-2 py-2 px-3 w-full justify-start rounded-md text-sm bg-white/15 border border-white/25 text-white hover:bg-red-500/40 hover:border-red-500/50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
