@@ -31,6 +31,7 @@ import StudentSISPage from '../pages/StudentSISPage';
 import { AuthProvider, useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 import { queryClient } from '../lib/react-query/queryClient';
 import AdminSystemLogsPage from '../pages/admin/AdminSystemLogsPage';
+import { AcademicProvider } from '../contexts/AcademicContext';
 
 function RootLayout() {
   const location = useLocation();
@@ -82,7 +83,9 @@ const router = createBrowserRouter([
     element: (
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <AcademicProvider>
           <RootLayout />
+          </AcademicProvider>
         </AuthProvider>
       </QueryClientProvider>
     ),

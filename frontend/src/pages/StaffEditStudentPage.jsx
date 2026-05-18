@@ -11,6 +11,7 @@ import {
 import { staffApi } from "../lib/api/staffApi";
 import { staffToast } from "../lib/notifications";
 import { queryKeys } from "../lib/react-query/queryKeys";
+import { useAcademic } from "../contexts/AcademicContext";
 
 const defaultForm = {
   student_number: "",
@@ -71,7 +72,7 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
   const [enrollmentErrors, setEnrollmentErrors] = useState({});
   const [gradeErrors, setGradeErrors] = useState({});
   const [programs, setPrograms] = useState([]);
-
+  const {academicYears} = useAcademic();
   const refreshStudentDetail = (studentId) => {
     if (!studentId) return;
     staffApi
@@ -1054,18 +1055,30 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
                         <label className="text-sm font-medium text-gray-600">
                           Academic Year *
                         </label>
-                        <input
-                          type="text"
-                          value={enrollmentForm.academic_year}
-                          onChange={(e) =>
-                            setEnrollmentForm((p) => ({
-                              ...p,
-                              academic_year: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. 2025-2026"
-                          className={`${inputBase} ${enrollmentErrors.academic_year ? inputError : inputNormal} w-32`}
-                        />
+                        <select
+                        value={enrollmentForm.academic_year}
+                        onChange={(e) =>
+                          setEnrollmentForm((p) => ({
+                            ...p,
+                            academic_year: e.target.value,
+                          }))
+                        }
+                        className={`${inputBase} ${
+                          enrollmentErrors.academic_year ? inputError : inputNormal
+                        } w-40`}
+                      >
+                        <option value="">Select academic year</option>
+
+                        {academicYears && academicYears.length > 0 ? (
+                          academicYears.map((ay) => (
+                            <option key={ay.id} value={ay.name}>
+                              {ay.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No academic years available</option>
+                        )}
+                      </select>
                         {enrollmentErrors.academic_year && (
                           <span className="text-xs text-red-600">
                             {enrollmentErrors.academic_year}
@@ -1325,7 +1338,33 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
                         <label className="text-sm font-medium text-gray-600">
                           Academic Year *
                         </label>
-                        <input
+
+                        <select
+                        value={gradeForm.academic_year}
+                        onChange={(e) =>
+                          setGradeForm((p) => ({
+                            ...p,
+                            academic_year: e.target.value,
+                          }))
+                        }
+                        className={`${inputBase} ${
+                          gradeErrors.academic_year ? inputError : inputNormal
+                        } w-40`}
+                      >
+                        <option value="">Select academic year</option>
+
+                        {academicYears && academicYears.length > 0 ? (
+                          academicYears.map((ay) => (
+                            <option key={ay.id} value={ay.name}>
+                              {ay.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No academic years available</option>
+                        )}
+                      </select>
+
+                        {/* <input
                           type="text"
                           value={gradeForm.academic_year}
                           onChange={(e) =>
@@ -1336,7 +1375,7 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
                           }
                           placeholder="e.g. 2025-2026"
                           className={`${inputBase} ${gradeErrors.academic_year ? inputError : inputNormal} w-32`}
-                        />
+                        /> */}
                         {gradeErrors.academic_year && (
                           <span className="text-xs text-red-600">
                             {gradeErrors.academic_year}

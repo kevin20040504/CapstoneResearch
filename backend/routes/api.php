@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserController;
@@ -42,6 +43,14 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/settings/current', [SystemSettingsController::class, 'current'])
     ->middleware(['auth:sanctum', 'role:staff,admin,student']);
 
+
+Route::get('/academic-years', [AcademicYearController::class, 'index']);
+
+Route::resource('/academic-years', AcademicYearController::class)
+    ->only(['create', 'store','index'])
+    ->middleware(['auth:sanctum', 'role:staff,admin']);
+
+
 // ---- Staff & Admin: Students ----
 Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(function () {
     Route::get('/subjects', [StudentController::class, 'subjects']);
@@ -74,7 +83,10 @@ Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(
     Route::post('/transactions', [RequestController::class, 'storeTransaction']);
     Route::get('/requests/{id}/transcript-template', [RequestController::class, 'downloadTranscriptTemplate']);
     Route::get('/requests/{id}/approval-slip', [RequestController::class, 'downloadApprovalSlipStaff']);
+
+
 });
+    
 
 // ---- Staff & Admin: Reports ----
 Route::middleware(['auth:sanctum', 'role:staff,admin'])->prefix('staff')->group(function () {
@@ -119,4 +131,6 @@ Route::middleware(['auth:sanctum', 'role:student'])->prefix('student')->group(fu
     Route::post('/record-requests', [RecordRequestController::class, 'store']);
     Route::get('/record-requests/{id}', [RecordRequestController::class, 'show']);
     Route::get('/record-requests/{id}/approval-slip', [RequestController::class, 'downloadApprovalSlipStudent']);
+
 });
+

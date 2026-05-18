@@ -1,26 +1,32 @@
-import React, { useState } from 'react';
-import Modal from '../ui/Modal';
+import React, { useState } from "react";
+import Modal from "../ui/Modal";
+import { useAcademic } from "../../contexts/AcademicContext";
 
-const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoading }) => {
+const SystemSettingsModal = ({
+  isOpen,
+  onClose,
+  initialSettings,
+  onSave,
+  saveLoading,
+}) => {
   const [form, setForm] = useState({
-    institutionName: '',
-    institutionShortName: '',
-    address: '',
-    academicYear: '',
-    semester: '',
+    institutionName: "",
+    institutionShortName: "",
+    address: "",
+    academicYear: "",
     emailNotifications: true,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-
+  const { academicYears } = useAcademic();
   React.useEffect(() => {
     if (initialSettings) {
       setForm({
-        institutionName: initialSettings.institutionName || 'Trece Martires City College',
-        institutionShortName: initialSettings.institutionShortName || 'TMCC',
-        address: initialSettings.address || 'Trece Martires City, Cavite',
-        academicYear: initialSettings.academicYear || '2025-2026',
-        semester: initialSettings.semester || '2nd Semester',
+        institutionName:
+          initialSettings.institutionName || "Trece Martires City College",
+        institutionShortName: initialSettings.institutionShortName || "TMCC",
+        address: initialSettings.address || "Trece Martires City, Cavite",
+        academicYear: initialSettings.academicYear || "2025-2026",
         emailNotifications: initialSettings.emailNotifications ?? true,
       });
     }
@@ -28,8 +34,10 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoa
 
   const validate = () => {
     const err = {};
-    if (!form.institutionName?.trim()) err.institutionName = 'Institution name is required.';
-    if (!form.academicYear?.trim()) err.academicYear = 'Academic year is required.';
+    if (!form.institutionName?.trim())
+      err.institutionName = "Institution name is required.";
+    if (!form.academicYear?.trim())
+      err.academicYear = "Academic year is required.";
     setErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -50,52 +58,93 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoa
 
   const busy = loading || saveLoading;
 
-  const inputBase = 'w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc';
-  const inputError = 'border-red-500 bg-red-50';
-  const inputNormal = 'border-gray-300';
+  const inputBase =
+    "w-full py-2.5 px-4 rounded-lg border text-base focus:outline-none focus:ring-2 focus:ring-tmcc/20 focus:border-tmcc";
+  const inputError = "border-red-500 bg-red-50";
+  const inputNormal = "border-gray-300";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="System Settings" titleId="system-settings-title" maxWidth="max-w-lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="System Settings"
+      titleId="system-settings-title"
+      maxWidth="max-w-lg"
+    >
       <form onSubmit={handleSubmit} className="p-6">
         <div className="space-y-4">
           <div>
-            <label htmlFor="institution-name" className="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
+            <label
+              htmlFor="institution-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Institution Name
+            </label>
             <input
               id="institution-name"
               type="text"
               value={form.institutionName}
-              onChange={(e) => setForm((f) => ({ ...f, institutionName: e.target.value }))}
-              className={errors.institutionName ? `${inputBase} ${inputError}` : `${inputBase} ${inputNormal}`}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, institutionName: e.target.value }))
+              }
+              className={
+                errors.institutionName
+                  ? `${inputBase} ${inputError}`
+                  : `${inputBase} ${inputNormal}`
+              }
               placeholder="Trece Martires City College"
               aria-invalid={!!errors.institutionName}
             />
-            {errors.institutionName && <p className="mt-1 text-xs text-red-600">{errors.institutionName}</p>}
+            {errors.institutionName && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.institutionName}
+              </p>
+            )}
           </div>
           <div>
-            <label htmlFor="institution-short" className="block text-sm font-medium text-gray-700 mb-1">Short Name</label>
+            <label
+              htmlFor="institution-short"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Short Name
+            </label>
             <input
               id="institution-short"
               type="text"
               value={form.institutionShortName}
-              onChange={(e) => setForm((f) => ({ ...f, institutionShortName: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, institutionShortName: e.target.value }))
+              }
               className={`${inputBase} ${inputNormal}`}
               placeholder="TMCC"
             />
           </div>
           <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <label
+              htmlFor="address"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Address
+            </label>
             <input
               id="address"
               type="text"
               value={form.address}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, address: e.target.value }))
+              }
               className={`${inputBase} ${inputNormal}`}
               placeholder="Trece Martires City, Cavite"
             />
           </div>
           <div>
-            <label htmlFor="academic-year" className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
-            <input
+            <label
+              htmlFor="academic-year"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Academic Year
+            </label>
+            {/* <input
               id="academic-year"
               type="text"
               value={form.academicYear}
@@ -103,21 +152,33 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoa
               className={errors.academicYear ? `${inputBase} ${inputError}` : `${inputBase} ${inputNormal}`}
               placeholder="2025-2026"
               aria-invalid={!!errors.academicYear}
-            />
-            {errors.academicYear && <p className="mt-1 text-xs text-red-600">{errors.academicYear}</p>}
-          </div>
-          <div>
-            <label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+            /> */}
             <select
-              id="semester"
-              value={form.semester}
-              onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
-              className={`${inputBase} ${inputNormal}`}
+              className={
+                errors.academicYear
+                  ? `${inputBase} ${inputError}`
+                  : `${inputBase} ${inputNormal}`
+              }
+              id="academic-years"
+              value={form.id}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, academicYear: e.target.value }))
+              }
             >
-              <option value="1st Semester">1st Semester</option>
-              <option value="2nd Semester">2nd Semester</option>
+              {academicYears &&
+                academicYears.map((ay) => (
+                  <option key={ay.id} value={ay.id}>
+                    {ay.name} - {ay.semester}
+                  </option>
+                ))}
+
+              <option value="new">Generate new academic year</option>
             </select>
+            {errors.academicYear && (
+              <p className="mt-1 text-xs text-red-600">{errors.academicYear}</p>
+            )}
           </div>
+
           {/* <div className="flex items-center gap-3 pt-2">
             <input
               id="email-notifications"
@@ -130,11 +191,19 @@ const SystemSettingsModal = ({ isOpen, onClose, initialSettings, onSave, saveLoa
           </div> */}
         </div>
         <div className="flex gap-3 mt-6 justify-end">
-          <button type="button" onClick={onClose} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300">
+          <button
+            type="button"
+            onClick={onClose}
+            className="py-2.5 px-5 rounded-lg text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={busy} className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30 disabled:opacity-70">
-            {busy ? 'Saving...' : 'Save Settings'}
+          <button
+            type="submit"
+            disabled={busy}
+            className="py-2.5 px-5 rounded-lg text-sm font-medium bg-tmcc text-white hover:bg-tmcc-dark focus:ring-2 focus:ring-tmcc/30 disabled:opacity-70"
+          >
+            {busy ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </form>

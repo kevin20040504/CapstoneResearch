@@ -6,11 +6,12 @@ import { adminApi } from '../../lib/api/adminApi';
 import { queryKeys } from '../../lib/react-query/queryKeys';
 import { adminToast } from '../../lib/notifications';
 import { mapFormToApiPayload, mapSettingsToForm } from '../../features/admin/systemSettings';
+import { useAcademic } from '../../contexts/AcademicContext';
 
 const AdminSystemSettingsPage = () => {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
-
+  const {laodAcademicYears} = useAcademic();
   const settingsQuery = useQuery({
     queryKey: queryKeys.admin.settings(),
     queryFn: async () => {
@@ -29,6 +30,7 @@ const AdminSystemSettingsPage = () => {
       window.dispatchEvent(new CustomEvent('system-settings-updated'));
       adminToast.success('Settings saved', 'System settings have been updated successfully.');
       setModalOpen(false);
+      laodAcademicYears();
     },
     onError: (err) => {
       const msg = err?.response?.data?.message || err?.apiMessage || 'Could not save settings.';
