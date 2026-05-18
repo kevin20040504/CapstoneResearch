@@ -155,7 +155,8 @@ const ViewRecordsPage = () => {
     const grades = student?.grades;
     return Array.isArray(grades) ? grades : [];
   }, [student]);
-
+  const fullName =
+  `${student?.first_name ?? ''} ${student?.middle_name ?? ''} ${student?.last_name ?? ''}`.trim();
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -374,37 +375,63 @@ const ViewRecordsPage = () => {
                         <span className="font-semibold text-[0.95rem]">Student information</span>
                       </div>
                       <dl className="divide-y divide-gray-100 bg-white">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
-                          <dt className="text-xs font-medium text-gray-500 uppercase w-40 shrink-0">ID</dt>
-                          <dd className="m-0 text-sm text-gray-900 font-medium">
-                            {student.student_number ?? student.student_id ?? '—'}
-                          </dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
-                          <dt className="text-xs font-medium text-gray-500 uppercase w-40 shrink-0">Status</dt>
-                          <dd className="m-0">
-                            <span
-                              className={`inline-block py-1 px-2.5 rounded-full text-xs font-semibold ${statusBadgeClass(deriveStatusLabel(student))}`}
-                            >
-                              {deriveStatusLabel(student)}
-                            </span>
-                          </dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
-                          <dt className="text-xs font-medium text-gray-500 uppercase w-40 shrink-0">Course</dt>
-                          <dd className="m-0 text-sm text-gray-900">
-                            {student.program?.name || student.program?.code || '—'}
-                          </dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
-                          <dt className="text-xs font-medium text-gray-500 uppercase w-40 shrink-0">Year level</dt>
-                          <dd className="m-0 text-sm text-gray-900">N/A</dd>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
-                          <dt className="text-xs font-medium text-gray-500 uppercase w-40 shrink-0">Major</dt>
-                          <dd className="m-0 text-sm text-gray-900">N/A</dd>
-                        </div>
-                      </dl>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Student No.</dt>
+    <dd className="text-sm text-gray-900">{student.student_number ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Full Name</dt>
+    <dd className="text-sm text-gray-900">{fullName || '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Sex</dt>
+    <dd className="text-sm text-gray-900">{student.sex ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Date of Birth</dt>
+    <dd className="text-sm text-gray-900">{student.date_of_birth ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Place of Birth</dt>
+    <dd className="text-sm text-gray-900">{student.place_of_birth ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Citizenship</dt>
+    <dd className="text-sm text-gray-900">{student.citizenship ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Guardian</dt>
+    <dd className="text-sm text-gray-900">{student.guardian_name ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Emergency Contact</dt>
+    <dd className="text-sm text-gray-900">{student.emergency_contact ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">GPA</dt>
+    <dd className="text-sm text-gray-900">{student.GPA ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Enrollment Date</dt>
+    <dd className="text-sm text-gray-900">{student.enrollment_date ?? '—'}</dd>
+  </div>
+
+  <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-4 py-3">
+    <dt className="text-xs font-medium text-gray-500 uppercase w-40">Graduation Date</dt>
+    <dd className="text-sm text-gray-900">{student.graduation_date ?? '—'}</dd>
+  </div>
+
+</dl>
                     </div>
 
                     <div className="rounded-xl overflow-hidden border border-amber-200/90 shadow-sm">

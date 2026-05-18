@@ -14,7 +14,10 @@ class UpdateStudentSisRequest extends FormRequest
     public function rules(): array
     {
         return [
-           
+           'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'emergency_contact' => ['nullable', 'string', 'max:15'],
             'contact_number' => ['nullable', 'string', 'max:15'],
             'address' => ['nullable', 'string', 'max:150'],
             'place_of_birth' => ['nullable', 'string', 'max:120'],

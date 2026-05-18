@@ -42,6 +42,7 @@ class Student extends Model
         'enrollment_date',
         'graduation_date',
         'GPA',
+        'emergency_contact'
     ];
 
     protected $casts = [

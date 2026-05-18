@@ -1256,8 +1256,7 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
                         <label className="text-sm font-medium text-gray-600">
                           Remarks (optional)
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={gradeForm.remarks}
                           onChange={(e) =>
                             setGradeForm((p) => ({
@@ -1265,10 +1264,13 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
                               remarks: e.target.value,
                             }))
                           }
-                          placeholder="Passed, Failed, INC"
-                          maxLength={50}
-                          className={`${inputBase} ${inputNormal} w-32`}
-                        />
+                          className={`${inputBase} ${gradeErrors.remarks ? inputError : inputNormal} w-32`}
+                        >
+                          <option value="">Select remark</option>
+                          <option value="Passed">Passed</option>
+                          <option value="Failed">Failed</option>
+                          <option value="INC">INC</option>
+                        </select>
                       </div>
                       <button
                         type="submit"
@@ -1437,19 +1439,18 @@ const StaffEditStudentPage = ({ basePath = "/staff" }) => {
                         <label className="text-sm font-medium text-gray-600">
                           Remarks (optional)
                         </label>
-                        <input
-                          type="text"
-                          value={gradeForm.remarks}
-                          onChange={(e) =>
+                        <select name="" maxLength={50} id="" value={gradeForm.remarks} className={`${inputBase} ${inputNormal} w-32`} onChange={(e) =>
                             setGradeForm((p) => ({
                               ...p,
                               remarks: e.target.value,
                             }))
-                          }
-                          placeholder="Passed, Failed, INC"
-                          maxLength={50}
-                          className={`${inputBase} ${inputNormal} w-32`}
-                        />
+                            
+                          }>
+                              <option value="">Select remark</option>
+                              <option value="Passed">Passed</option>
+                              <option value="Failed">Failed</option>
+                              <option value="INC">INC</option>
+                        </select>
                       </div>
                       <button
                         type="submit"

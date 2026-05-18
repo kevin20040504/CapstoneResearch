@@ -1,61 +1,71 @@
-import React from 'react';
-import { studentApi } from '../lib/api/studentApi';
+import React from "react";
+import { studentApi } from "../lib/api/studentApi";
 
-const normalize = (v) => (v ?? '').toString().trim();
+const normalize = (v) => (v ?? "").toString().trim();
 
 const StudentSISPage = () => {
   const [profile, setProfile] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState('');
+  const [error, setError] = React.useState("");
 
-  const [sisInput, setSisInput] = React.useState('');
+  const [sisInput, setSisInput] = React.useState("");
   const [sisVerified, setSisVerified] = React.useState(false);
 
   const [saving, setSaving] = React.useState(false);
-  const [saveMsg, setSaveMsg] = React.useState('');
+  const [saveMsg, setSaveMsg] = React.useState("");
 
   const student = profile?.student;
-  const studentNumber = student?.student_number || '';
+  const studentNumber = student?.student_number || "";
 
   const [form, setForm] = React.useState({
-    contact_number: '',
-    address: '',
-    place_of_birth: '',
-    sex: '',
-    guardian_name: '',
-    citizenship: '',
-    elementary_school: '',
-    elementary_year: '',
-    high_school: '',
-    high_school_year: '',
-    previous_school: '',
-    previous_course: '',
+    contact_number: "",
+    address: "",
+    place_of_birth: "",
+    sex: "",
+    guardian_name: "",
+    citizenship: "",
+    first_name: "",
+    last_name: "",
+    middle_name: "",
+    emergency_contact: "",
+    elementary_school: "",
+    elementary_year: "",
+    high_school: "",
+    high_school_year: "",
+    previous_school: "",
+    previous_course: "",
+    email: "",
   });
-
   React.useEffect(() => {
     setLoading(true);
-    studentApi.getProfile()
+    studentApi
+      .getProfile()
       .then((data) => {
         setProfile(data);
         const s = data?.student || {};
         setForm((prev) => ({
           ...prev,
-          contact_number: s.contact_number || '',
-          address: s.address || '',
-          place_of_birth: s.place_of_birth || '',
-          sex: s.sex || '',
-          guardian_name: s.guardian_name || '',
-          citizenship: s.citizenship || '',
-          elementary_school: s.elementary_school || '',
-          elementary_year: s.elementary_year ?? '',
-          high_school: s.high_school || '',
-          high_school_year: s.high_school_year ?? '',
-          previous_school: s.previous_school || '',
-          previous_course: s.previous_course || '',
+          contact_number: s.contact_number || "",
+          address: s.address || "",
+          place_of_birth: s.place_of_birth || "",
+          sex: s.sex || "",
+          guardian_name: s.guardian_name || "",
+          citizenship: s.citizenship || "",
+          elementary_school: s.elementary_school || "",
+          elementary_year: s.elementary_year ?? "",
+          high_school: s.high_school || "",
+          high_school_year: s.high_school_year ?? "",
+          previous_school: s.previous_school || "",
+          previous_course: s.previous_course || "",
+          first_name: s.first_name || "",
+          last_name: s.last_name || "",
+          middle_name: s.middle_name || "",
+          emergency_contact: s.emergency_contact || "",
+          email: s.email || "",
         }));
       })
       .catch(() => {
-        setError('Failed to load student profile.');
+        setError("Failed to load student profile.");
         setProfile(null);
       })
       .finally(() => setLoading(false));
@@ -64,21 +74,24 @@ const StudentSISPage = () => {
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
-    setSaveMsg('');
+    setSaveMsg("");
   };
 
   const handleVerify = (e) => {
     e.preventDefault();
-    setError('');
-    setSaveMsg('');
+    setError("");
+    setSaveMsg("");
 
     if (!studentNumber) {
-      setError('Student number not found in your profile.');
+      setError("Student number not found in your profile.");
       return;
     }
 
-    if (normalize(sisInput).toLowerCase() !== normalize(studentNumber).toLowerCase()) {
-      setError('SIS does not match your student number.');
+    if (
+      normalize(sisInput).toLowerCase() !==
+      normalize(studentNumber).toLowerCase()
+    ) {
+      setError("SIS does not match your student number.");
       setSisVerified(false);
       return;
     }
@@ -88,11 +101,11 @@ const StudentSISPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSaveMsg('');
+    setError("");
+    setSaveMsg("");
 
     if (!sisVerified) {
-      setError('Please verify your SIS first.');
+      setError("Please verify your SIS first.");
       return;
     }
 
@@ -100,13 +113,15 @@ const StudentSISPage = () => {
     try {
       const payload = {
         ...form,
-        elementary_year: form.elementary_year === '' ? null : Number(form.elementary_year),
-        high_school_year: form.high_school_year === '' ? null : Number(form.high_school_year),
+        elementary_year:
+          form.elementary_year === "" ? null : Number(form.elementary_year),
+        high_school_year:
+          form.high_school_year === "" ? null : Number(form.high_school_year),
       };
       const res = await studentApi.updateSIS(payload);
-      setSaveMsg(res?.message || 'Saved.');
+      setSaveMsg(res?.message || "Saved.");
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Failed to save SIS.';
+      const msg = err?.response?.data?.message || "Failed to save SIS.";
       setError(msg);
     } finally {
       setSaving(false);
@@ -117,7 +132,9 @@ const StudentSISPage = () => {
     return (
       <section className="sd-content">
         <div className="sd-enrollment-section">
-          <h2 className="sd-section-title sd-title-red">Student Information Sheet (SIS)</h2>
+          <h2 className="sd-section-title sd-title-red">
+            Student Information Sheet (SIS)
+          </h2>
           <p className="text-gray-600">Loading…</p>
         </div>
       </section>
@@ -125,20 +142,23 @@ const StudentSISPage = () => {
   }
 
   const fullName = student
-    ? `${(student.last_name || '').toUpperCase()}, ${(student.first_name || '').toUpperCase()} ${student.middle_name ? student.middle_name.toUpperCase() : ''}`.trim()
-    : '—';
+    ? `${(student.last_name || "").toUpperCase()}, ${(student.first_name || "").toUpperCase()} ${student.middle_name ? student.middle_name.toUpperCase() : ""}`.trim()
+    : "—";
 
   return (
     <section className="sd-content">
       <div className="sd-enrollment-section">
-        <h2 className="sd-section-title sd-title-red">Student Information Sheet (SIS) / SIUF</h2>
+        <h2 className="sd-section-title sd-title-red">
+          Student Information Sheet (SIS) / SIUF
+        </h2>
         <p className="sd-filter-hint">
-          Enter your <strong>SIS (Student Number)</strong> to unlock and update the fields required by the Registrar.
+          Enter your <strong>SIS (Student Number)</strong> to unlock and update
+          the fields required by the Registrar.
         </p>
 
         {(error || saveMsg) && (
           <div
-            className={`mx-0 mt-3 p-3 rounded-lg border text-sm ${error ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800'}`}
+            className={`mx-0 mt-3 p-3 rounded-lg border text-sm ${error ? "bg-red-50 border-red-200 text-red-800" : "bg-green-50 border-green-200 text-green-800"}`}
             role="alert"
           >
             {error || saveMsg}
@@ -146,9 +166,11 @@ const StudentSISPage = () => {
         )}
 
         <form onSubmit={handleVerify} className="mt-4">
-          <div className="sd-cards-row" style={{ gap: 12, alignItems: 'end' }}>
+          <div className="sd-cards-row" style={{ gap: 12, alignItems: "end" }}>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">SIS (Student Number)</label>
+              <label className="block text-sm font-semibold mb-1">
+                SIS (Student Number)
+              </label>
               <input
                 type="text"
                 value={sisInput}
@@ -157,15 +179,17 @@ const StudentSISPage = () => {
                 placeholder="Enter your SIS / student number"
                 autoComplete="off"
               />
-              <p className="text-xs text-gray-500 mt-1">Your student number: <strong>{studentNumber || '—'}</strong></p>
+              <p className="text-xs text-gray-500 mt-1">
+                Your student number: <strong>{studentNumber || "—"}</strong>
+              </p>
             </div>
             <button
               type="submit"
               className="sd-quick-link"
-              style={{ width: 200, justifyContent: 'center' }}
+              style={{ width: 200, justifyContent: "center" }}
               disabled={!sisInput}
             >
-              {sisVerified ? 'Verified' : 'Verify SIS'}
+              {sisVerified ? "Verified" : "Verify SIS"}
             </button>
           </div>
         </form>
@@ -173,23 +197,64 @@ const StudentSISPage = () => {
 
       <form onSubmit={handleSubmit} className="mt-6">
         <div className="sd-enrollment-section">
-          <h3 className="sd-section-title sd-title-red" style={{ fontSize: 18 }}>Personal Information</h3>
+          <h3
+            className="sd-section-title sd-title-red"
+            style={{ fontSize: 18 }}
+          >
+            Personal Information
+          </h3>
+
+          <div style={{ flex: 1 }}>
+            <label className="block text-sm font-semibold mb-1">
+              First Name
+            </label>
+            <input
+              name="first_name"
+              type="text"
+              value={form.first_name}
+              onChange={onChange}
+              disabled={!sisVerified}
+              className="w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <label className="block text-sm font-semibold mb-1">
+              Last Name
+            </label>
+            <input
+              name="last_name"
+              type="text"
+              value={form.last_name}
+              onChange={onChange}
+              disabled={!sisVerified}
+              className="w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <label className="block text-sm font-semibold mb-1">
+              Middle Name
+            </label>
+            <input
+              name="middle_name"
+              type="text"
+              value={form.middle_name}
+              onChange={onChange}
+              disabled={!sisVerified}
+              className="w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
 
           <div className="sd-cards-row" style={{ gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">Student Name</label>
-              <input
-                type="text"
-                value={fullName}
-                className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2"
-                readOnly
-              />
-            </div>
+            {" "}
             <div style={{ width: 260 }}>
-              <label className="block text-sm font-semibold mb-1">Date of Birth</label>
+              <label className="block text-sm font-semibold mb-1">
+                Date of Birth
+              </label>
               <input
                 type="text"
-                value={student?.date_of_birth || ''}
+                value={student?.date_of_birth || ""}
                 className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2"
                 readOnly
               />
@@ -198,7 +263,9 @@ const StudentSISPage = () => {
 
           <div className="sd-cards-row" style={{ gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">Address</label>
+              <label className="block text-sm font-semibold mb-1">
+                Address
+              </label>
               <input
                 name="address"
                 type="text"
@@ -209,7 +276,9 @@ const StudentSISPage = () => {
               />
             </div>
             <div style={{ width: 280 }}>
-              <label className="block text-sm font-semibold mb-1">Place of Birth</label>
+              <label className="block text-sm font-semibold mb-1">
+                Place of Birth
+              </label>
               <input
                 name="place_of_birth"
                 type="text"
@@ -237,7 +306,9 @@ const StudentSISPage = () => {
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">Name of Guardian</label>
+              <label className="block text-sm font-semibold mb-1">
+                Name of Guardian
+              </label>
               <input
                 name="guardian_name"
                 type="text"
@@ -248,7 +319,9 @@ const StudentSISPage = () => {
               />
             </div>
             <div style={{ width: 260 }}>
-              <label className="block text-sm font-semibold mb-1">Citizenship</label>
+              <label className="block text-sm font-semibold mb-1">
+                Citizenship
+              </label>
               <input
                 name="citizenship"
                 type="text"
@@ -262,7 +335,9 @@ const StudentSISPage = () => {
 
           <div className="sd-cards-row" style={{ gap: 12 }}>
             <div style={{ width: 260 }}>
-              <label className="block text-sm font-semibold mb-1">Contact Number</label>
+              <label className="block text-sm font-semibold mb-1">
+                Contact Number
+              </label>
               <input
                 name="contact_number"
                 type="text"
@@ -272,24 +347,45 @@ const StudentSISPage = () => {
                 disabled={!sisVerified}
               />
             </div>
+            <div style={{ width: 260 }}>
+              <label className="block text-sm font-semibold mb-1">
+                Emergency Contact
+              </label>
+              <input
+                name="emergency_contact"
+                type="text"
+                value={form.emergency_contact}
+                onChange={onChange}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                disabled={!sisVerified}
+              />
+            </div>
             <div style={{ flex: 1 }}>
               <label className="block text-sm font-semibold mb-1">Email</label>
               <input
+                name="email"
                 type="text"
-                value={student?.email || ''}
-                className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2"
-                readOnly
+                value={form.email}
+                onChange={onChange}
+                disabled={!sisVerified}
               />
             </div>
           </div>
         </div>
 
         <div className="sd-enrollment-section mt-6">
-          <h3 className="sd-section-title sd-title-red" style={{ fontSize: 18 }}>Entrance Data</h3>
+          <h3
+            className="sd-section-title sd-title-red"
+            style={{ fontSize: 18 }}
+          >
+            Entrance Data
+          </h3>
 
           <div className="sd-cards-row" style={{ gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">Elementary School</label>
+              <label className="block text-sm font-semibold mb-1">
+                Elementary School
+              </label>
               <input
                 name="elementary_school"
                 type="text"
@@ -316,7 +412,9 @@ const StudentSISPage = () => {
 
           <div className="sd-cards-row" style={{ gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">High School</label>
+              <label className="block text-sm font-semibold mb-1">
+                High School
+              </label>
               <input
                 name="high_school"
                 type="text"
@@ -343,7 +441,9 @@ const StudentSISPage = () => {
 
           <div className="sd-cards-row" style={{ gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">Previous School</label>
+              <label className="block text-sm font-semibold mb-1">
+                Previous School
+              </label>
               <input
                 name="previous_school"
                 type="text"
@@ -354,7 +454,9 @@ const StudentSISPage = () => {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label className="block text-sm font-semibold mb-1">Previous Course</label>
+              <label className="block text-sm font-semibold mb-1">
+                Previous Course
+              </label>
               <input
                 name="previous_course"
                 type="text"
@@ -366,14 +468,22 @@ const StudentSISPage = () => {
             </div>
           </div>
 
-          <div className="sd-cards-row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
+          <div
+            className="sd-cards-row"
+            style={{ justifyContent: "flex-end", marginTop: 14 }}
+          >
             <button
               type="submit"
               className="sd-quick-link"
-              style={{ width: 220, justifyContent: 'center', opacity: sisVerified ? 1 : 0.6, pointerEvents: sisVerified ? 'auto' : 'none' }}
+              style={{
+                width: 220,
+                justifyContent: "center",
+                opacity: sisVerified ? 1 : 0.6,
+                pointerEvents: sisVerified ? "auto" : "none",
+              }}
               disabled={saving}
             >
-              {saving ? 'Saving…' : 'Save SIS'}
+              {saving ? "Saving…" : "Save SIS"}
             </button>
           </div>
         </div>
@@ -383,4 +493,3 @@ const StudentSISPage = () => {
 };
 
 export default StudentSISPage;
-
